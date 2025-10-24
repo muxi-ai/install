@@ -58,12 +58,18 @@ brew install muxi-ai/tap/muxi
 **Structure:**
 ```
 Formula/
-├── muxi-cli.rb       # CLI only (lightweight, for remote management)
-├── muxi-server.rb    # Server only (production deployments)
-└── muxi.rb           # Meta-package (depends on both)
+├── muxi-cli.rb       # CLI only (lightweight, for remote management) - FUTURE
+├── muxi-server.rb    # Server only (production deployments) - EXISTS
+└── muxi.rb           # Meta-package (depends on both) - FUTURE
 ```
 
+> **Note:** Currently only `muxi-server.rb` exists. Once CLI is built, we'll create:
+> - `muxi-cli.rb` - Standalone CLI formula
+> - `muxi.rb` - Unified meta-package that depends on both server and CLI
+
 **Philosophy:** User chooses what they need - separation of concerns.
+
+**Repository:** [github.com/muxi-ai/homebrew-tap](https://github.com/muxi-ai/homebrew-tap) (separate from install scripts - follows Homebrew convention)
 
 ---
 
