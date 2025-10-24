@@ -6,7 +6,6 @@
 # Usage:
 #   Interactive:             curl -sSL https://install.muxi.org | sudo bash
 #   Non-interactive:         curl -sSL https://install.muxi.org | bash -s -- --non-interactive
-#   With email:              curl -sSL https://install.muxi.org | bash -s -- --email=dev@company.com
 #
 
 set -e  # Exit on error
@@ -31,19 +30,11 @@ ${NC}"
 
 # Parse arguments
 NON_INTERACTIVE=0
-USER_EMAIL=""
-AUTO_CONFIGURE=0
 
 for arg in "$@"; do
     case $arg in
         --non-interactive)
             NON_INTERACTIVE=1
-            ;;
-        --email=*)
-            USER_EMAIL="${arg#*=}"
-            ;;
-        --configure)
-            AUTO_CONFIGURE=1
             ;;
     esac
 done
@@ -321,25 +312,26 @@ if [ "$INSTALL_TYPE" = "user" ]; then
 fi
 
 # Community email collection (only in interactive mode)
-if [ "$NON_INTERACTIVE" = "0" ] && [ -z "$USER_EMAIL" ]; then
+if [ "$NON_INTERACTIVE" = "0" ]; then
     echo ""
     echo -e "${CYAN}→ Join the MUXI community?${NC} (optional)"
     echo "  Get early access to features, workshops, and exclusive content!"
     echo ""
     read -p "  Email [press Enter to skip]: " USER_EMAIL
     echo ""
-fi
-
-# Send email to community API if provided
-if [ -n "$USER_EMAIL" ]; then
-    # TODO: Send to https://api.muxi.org/community/subscribe
-    # For now, just acknowledge
-    success "Welcome to MUXI! Check your email for community resources."
-    echo ""
+    
+    # Send email to community API if provided
+    if [ -n "$USER_EMAIL" ]; then
+        # TODO: Send to https://api.muxi.org/community/subscribe
+        # For now, just acknowledge
+        success "Welcome to MUXI! Check your email for community resources."
+        echo ""
+    fi
 fi
 
 # Offer to configure server (only in interactive mode)
-if [ "$NON_INTERACTIVE" = "0" ] && [ "$AUTO_CONFIGURE" = "0" ]; then
+AUTO_CONFIGURE=0
+if [ "$NON_INTERACTIVE" = "0" ]; then
     read -p "$(echo -e ${BLUE}→${NC}) Configure server now? [Y/n]: " configure_now
     echo ""
     

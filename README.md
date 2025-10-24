@@ -14,14 +14,8 @@ Official installation scripts for MUXI tools.
 # Interactive (prompts for email, offers to configure)
 curl -sSL https://install.muxi.org | sudo bash
 
-# Non-interactive (CI/Docker)
+# Non-interactive (CI/Docker) - auto-detected or explicit
 curl -sSL https://install.muxi.org | sudo bash -s -- --non-interactive
-
-# With email (no prompt)
-curl -sSL https://install.muxi.org | sudo bash -s -- --email=dev@company.com
-
-# With email + auto-configure
-curl -sSL https://install.muxi.org | sudo bash -s -- --email=dev@company.com --configure
 ```
 
 ### Windows
@@ -30,11 +24,8 @@ curl -sSL https://install.muxi.org | sudo bash -s -- --email=dev@company.com --c
 # Interactive
 irm https://install.muxi.org/windows.ps1 | iex
 
-# Non-interactive
+# Non-interactive (auto-detected or explicit)
 irm https://install.muxi.org/windows.ps1 | iex -NonInteractive
-
-# With parameters
-irm https://install.muxi.org/windows.ps1 | iex -Email "dev@company.com" -Configure
 ```
 
 ---
@@ -92,10 +83,10 @@ Start server:
 
 ## Features
 
-- **Auto-detection:** Detects if running in CI/Docker (non-interactive)
+- **Auto-detection:** Automatically detects CI/Docker environments (non-interactive mode)
 - **Optional email:** Community building, easily skippable
 - **Auto-configure:** Offers to run `muxi-server init` after install
-- **Arguments:** Override auto-detection with flags
+- **Simple:** Single `--non-interactive` flag to override auto-detection
 - **Safe:** All prompts are optional, never blocks automation
 
 ---
