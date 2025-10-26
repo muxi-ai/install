@@ -1,0 +1,41 @@
+# MUXI Installation Router - Apache .htaccess
+# 
+# Simple routing for Apache servers without PHP
+# Detects client and serves appropriate script
+#
+# Requires: mod_rewrite, mod_headers
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # PowerShell detection (Windows)
+    RewriteCond %{HTTP_USER_AGENT} WindowsPowerShell [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} PowerShell [NC]
+    RewriteRule ^/?$ /install.ps1 [L]
+    
+    # curl detection (Linux/macOS)
+    RewriteCond %{HTTP_USER_AGENT} curl [NC]
+    RewriteRule ^/?$ /install.sh [L]
+    
+    # wget detection (Linux)
+    RewriteCond %{HTTP_USER_AGENT} wget [NC]
+    RewriteRule ^/?$ /install.sh [L]
+    
+    # Fallback: redirect browsers to documentation
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^/?$ https://muxi.org/docs/install [R=302,L]
+</IfModule>
+
+# Set content types
+<IfModule mod_mime.c>
+    AddType text/plain .sh
+    AddType text/plain .ps1
+</IfModule>
+
+# Enable caching for scripts (5 minutes)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(sh|ps1)$">
+        Header set Cache-Control "public, max-age=300"
+    </FilesMatch>
+</IfModule>

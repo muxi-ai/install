@@ -1,11 +1,12 @@
 #!/bin/bash
 #
-# MUXI Server Installation Script
+# MUXI Installation Script
 # https://install.muxi.org (or https://get.muxi.org)
 #
 # Usage:
 #   Interactive:             curl -sSL https://install.muxi.org | sudo bash
 #   Non-interactive:         curl -sSL https://install.muxi.org | bash -s -- --non-interactive
+#   Non-interactive (custom): curl -sSL https://install.muxi.org | bash -s -- --non-interactive --components=server,cli
 #
 
 set -e  # Exit on error
@@ -30,11 +31,15 @@ ${NC}"
 
 # Parse arguments
 NON_INTERACTIVE=0
+COMPONENTS="cli"  # Default: CLI only for non-interactive
 
 for arg in "$@"; do
     case $arg in
         --non-interactive)
             NON_INTERACTIVE=1
+            ;;
+        --components=*)
+            COMPONENTS="${arg#*=}"
             ;;
     esac
 done
@@ -49,8 +54,13 @@ if [ "$NON_INTERACTIVE" = "0" ]; then
 fi
 
 # Constants
-REPO="muxi-ai/server"
+SERVER_REPO="muxi-ai/server"
+CLI_REPO="muxi-ai/cli"
 INSTALL_VERSION="${MUXI_VERSION:-latest}"  # Allow override with MUXI_VERSION env var
+
+# Component flags (will be set based on user selection)
+INSTALL_SERVER=0
+INSTALL_CLI=0
 
 # Detect platform
 OS="$(uname -s)"
@@ -118,7 +128,7 @@ error() {
 # Show banner (only in interactive mode)
 if [ "$NON_INTERACTIVE" = "0" ]; then
     echo -e "$BANNER"
-    echo "MUXI Server Installation"
+    echo "MUXI Installation"
     echo ""
 fi
 
@@ -143,29 +153,8 @@ else
     LOG_DIR="$HOME/.muxi/server/logs"
 fi
 
-# Print header
-print_header
-
-# Show installation details
-if [ "$INSTALL_TYPE" = "system" ]; then
-    info "Installing MUXI Server (system-wide)"
-    info "Platform: $OS/$ARCH"
-    info "Binary: $INSTALL_DIR/muxi-server"
-    info "Config: $CONFIG_DIR"
-    info "Data:   $DATA_DIR"
-    info "Logs:   $LOG_DIR"
-else
-    info "Installing MUXI Server (user-level)"
-    info "Platform: $OS/$ARCH"
-    info "Binary: $INSTALL_DIR/muxi-server"
-    info "Paths:  ~/.muxi/server/"
-    
-    if [ "$OS" = "darwin" ]; then
-        warn "macOS detected: Using user-level install (no system paths)"
-    fi
-fi
-
-echo ""
+# Print header (only in interactive mode - moved to after component selection)
+# We'll print this after we know what components to install
 
 # Check for required commands
 if ! command -v curl >/dev/null 2>&1; then
@@ -176,75 +165,118 @@ if ! command -v curl >/dev/null 2>&1; then
     exit 1
 fi
 
-# Determine download URL
-BINARY_NAME="muxi-server-${OS}-${ARCH}"
-if [ "$INSTALL_VERSION" = "latest" ]; then
-    DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}"
-else
-    DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${INSTALL_VERSION}/${BINARY_NAME}"
-fi
-
-info "Downloading MUXI Server from GitHub..."
-info "URL: $DOWNLOAD_URL"
-
 # Create temporary directory
 TMP_DIR="$(mktemp -d)"
 trap "rm -rf $TMP_DIR" EXIT
 
-# Download binary
-if ! curl -fsSL -o "$TMP_DIR/muxi-server" "$DOWNLOAD_URL"; then
-    error "Failed to download MUXI Server"
-    echo ""
-    echo "Possible reasons:"
-    echo "  • No release available for $OS/$ARCH"
-    echo "  • Network connectivity issues"
-    echo "  • GitHub API rate limiting"
-    echo ""
-    echo "Try downloading manually from:"
-    echo "  https://github.com/${REPO}/releases"
-    exit 1
-fi
-
-success "Downloaded successfully"
-
 # Create install directory
-info "Creating directories..."
 mkdir -p "$INSTALL_DIR"
 
-if [ "$INSTALL_TYPE" = "system" ]; then
-    # System install: create system directories
-    mkdir -p "$CONFIG_DIR"
-    mkdir -p "$DATA_DIR"
-    mkdir -p "$LOG_DIR"
+# Installation functions
+install_server() {
+    info "Downloading MUXI Server from GitHub..."
     
-    # Set permissions
-    chmod 755 "$CONFIG_DIR" "$DATA_DIR" "$LOG_DIR"
+    # Determine download URL
+    BINARY_NAME="muxi-server-${OS}-${ARCH}"
+    if [ "$INSTALL_VERSION" = "latest" ]; then
+        DOWNLOAD_URL="https://github.com/${SERVER_REPO}/releases/latest/download/${BINARY_NAME}"
+    else
+        DOWNLOAD_URL="https://github.com/${SERVER_REPO}/releases/download/${INSTALL_VERSION}/${BINARY_NAME}"
+    fi
     
-    success "Created system directories"
-else
-    # User install: just ensure ~/.muxi/server exists
-    mkdir -p "$HOME/.muxi/server"
-    success "Created user directories"
+    # Download binary
+    if ! curl -fsSL -o "$TMP_DIR/muxi-server" "$DOWNLOAD_URL"; then
+        error "Failed to download MUXI Server"
+        echo ""
+        echo "Possible reasons:"
+        echo "  • No release available for $OS/$ARCH"
+        echo "  • Network connectivity issues"
+        echo "  • GitHub API rate limiting"
+        echo ""
+        echo "Try downloading manually from:"
+        echo "  https://github.com/${SERVER_REPO}/releases"
+        return 1
+    fi
+    
+    success "Downloaded MUXI Server"
+    
+    # Create directories
+    if [ "$INSTALL_TYPE" = "system" ]; then
+        mkdir -p "$CONFIG_DIR" "$DATA_DIR" "$LOG_DIR"
+        chmod 755 "$CONFIG_DIR" "$DATA_DIR" "$LOG_DIR"
+    else
+        mkdir -p "$HOME/.muxi/server"
+    fi
+    
+    # Install binary
+    mv "$TMP_DIR/muxi-server" "$INSTALL_DIR/muxi-server"
+    chmod +x "$INSTALL_DIR/muxi-server"
+    
+    # Verify installation
+    if ! "$INSTALL_DIR/muxi-server" version >/dev/null 2>&1; then
+        error "Server binary verification failed"
+        return 1
+    fi
+    
+    VERSION_OUTPUT=$("$INSTALL_DIR/muxi-server" version 2>/dev/null || echo "unknown")
+    success "Installed MUXI Server: $VERSION_OUTPUT"
+}
+
+install_cli() {
+    info "Downloading MUXI CLI from GitHub..."
+    
+    # Determine download URL
+    BINARY_NAME="muxi-${OS}-${ARCH}"
+    if [ "$INSTALL_VERSION" = "latest" ]; then
+        DOWNLOAD_URL="https://github.com/${CLI_REPO}/releases/latest/download/${BINARY_NAME}"
+    else
+        DOWNLOAD_URL="https://github.com/${CLI_REPO}/releases/download/${INSTALL_VERSION}/${BINARY_NAME}"
+    fi
+    
+    # Download binary
+    if ! curl -fsSL -o "$TMP_DIR/muxi" "$DOWNLOAD_URL"; then
+        warn "MUXI CLI is not yet available"
+        echo ""
+        echo "The CLI is coming soon! For now, you can:"
+        echo "  • Manage the server directly with muxi-server commands"
+        echo "  • Use the REST API"
+        echo "  • Check https://github.com/${CLI_REPO} for updates"
+        echo ""
+        return 0  # Not a failure - just not available yet
+    fi
+    
+    success "Downloaded MUXI CLI"
+    
+    # Create CLI config directory
+    mkdir -p "$HOME/.muxi"
+    
+    # Install binary
+    mv "$TMP_DIR/muxi" "$INSTALL_DIR/muxi"
+    chmod +x "$INSTALL_DIR/muxi"
+    
+    # Verify installation
+    if ! "$INSTALL_DIR/muxi" version >/dev/null 2>&1; then
+        error "CLI binary verification failed"
+        return 1
+    fi
+    
+    VERSION_OUTPUT=$("$INSTALL_DIR/muxi" version 2>/dev/null || echo "unknown")
+    success "Installed MUXI CLI: $VERSION_OUTPUT"
+}
+
+# Perform installations based on component selection
+echo ""
+if [ "$INSTALL_SERVER" = "1" ]; then
+    install_server || exit 1
 fi
 
-# Install binary
-info "Installing binary to $INSTALL_DIR/muxi-server..."
-mv "$TMP_DIR/muxi-server" "$INSTALL_DIR/muxi-server"
-chmod +x "$INSTALL_DIR/muxi-server"
-success "Binary installed"
-
-# Verify installation
-if ! "$INSTALL_DIR/muxi-server" version >/dev/null 2>&1; then
-    error "Binary verification failed"
-    exit 1
+if [ "$INSTALL_CLI" = "1" ]; then
+    install_cli  # Don't exit on failure - CLI might not exist yet
 fi
-
-VERSION_OUTPUT=$("$INSTALL_DIR/muxi-server" version 2>/dev/null || echo "unknown")
-success "Verified: $VERSION_OUTPUT"
 
 echo ""
 echo "────────────────────────────────────────────────────────────"
-success "MUXI Server installed successfully!"
+success "Installation complete!"
 echo "────────────────────────────────────────────────────────────"
 echo ""
 
@@ -327,11 +359,99 @@ if [ "$NON_INTERACTIVE" = "0" ]; then
         success "Welcome to MUXI! Check your email for community resources."
         echo ""
     fi
+    
+    # Component selection
+    echo ""
+    echo -e "${CYAN}→ What would you like to install?${NC}"
+    echo "  [1] Server + CLI (recommended for local development)"
+    echo "  [2] CLI only (for managing remote servers)"
+    echo "  [3] Server only (for production deployments)"
+    echo ""
+    read -p "  Choice [1]: " COMPONENT_CHOICE
+    echo ""
+    
+    # Default to option 1
+    COMPONENT_CHOICE="${COMPONENT_CHOICE:-1}"
+    
+    case "$COMPONENT_CHOICE" in
+        1)
+            INSTALL_SERVER=1
+            INSTALL_CLI=1
+            info "Installing: Server + CLI"
+            ;;
+        2)
+            INSTALL_CLI=1
+            info "Installing: CLI only"
+            ;;
+        3)
+            INSTALL_SERVER=1
+            info "Installing: Server only"
+            ;;
+        *)
+            error "Invalid choice: $COMPONENT_CHOICE"
+            exit 1
+            ;;
+    esac
+else
+    # Non-interactive: parse components from argument
+    # Default is "cli" (set earlier)
+    if [[ "$COMPONENTS" == *"server"* ]]; then
+        INSTALL_SERVER=1
+    fi
+    if [[ "$COMPONENTS" == *"cli"* ]]; then
+        INSTALL_CLI=1
+    fi
+    
+    # If neither was specified, default to CLI only
+    if [ "$INSTALL_SERVER" = "0" ] && [ "$INSTALL_CLI" = "0" ]; then
+        INSTALL_CLI=1
+    fi
 fi
 
-# Offer to configure server (only in interactive mode)
-AUTO_CONFIGURE=0
+# Print header and installation details (after we know what to install)
 if [ "$NON_INTERACTIVE" = "0" ]; then
+    echo ""
+fi
+
+print_header
+
+# Show what will be installed
+info "Platform: $OS/$ARCH"
+if [ "$INSTALL_SERVER" = "1" ] && [ "$INSTALL_CLI" = "1" ]; then
+    info "Components: Server + CLI"
+elif [ "$INSTALL_SERVER" = "1" ]; then
+    info "Components: Server only"
+elif [ "$INSTALL_CLI" = "1" ]; then
+    info "Components: CLI only"
+fi
+
+# Show installation paths
+if [ "$INSTALL_SERVER" = "1" ]; then
+    if [ "$INSTALL_TYPE" = "system" ]; then
+        info "Server binary: $INSTALL_DIR/muxi-server"
+        info "Server config: $CONFIG_DIR"
+        info "Server data:   $DATA_DIR"
+        info "Server logs:   $LOG_DIR"
+    else
+        info "Server binary: $INSTALL_DIR/muxi-server"
+        info "Server paths:  ~/.muxi/server/"
+        
+        if [ "$OS" = "darwin" ]; then
+            warn "macOS detected: Using user-level install (no system paths)"
+        fi
+    fi
+fi
+
+if [ "$INSTALL_CLI" = "1" ]; then
+    info "CLI binary: $INSTALL_DIR/muxi"
+    info "CLI config: ~/.muxi/"
+fi
+
+echo ""
+
+# Offer to configure server (only in interactive mode and if server was installed)
+AUTO_CONFIGURE=0
+if [ "$NON_INTERACTIVE" = "0" ] && [ "$INSTALL_SERVER" = "1" ]; then
     read -p "$(echo -e ${BLUE}→${NC}) Configure server now? [Y/n]: " configure_now
     echo ""
     
@@ -366,8 +486,20 @@ if [ "$AUTO_CONFIGURE" = "1" ]; then
         echo "  muxi-server start"
     fi
     echo ""
+    
+    if [ "$INSTALL_CLI" = "1" ]; then
+        echo "Connect CLI to server:"
+        echo "  muxi profile add localhost http://localhost:7890"
+        echo ""
+    fi
+    
     echo "Documentation: https://docs.muxi.org/getting-started"
-    echo "Repository:    https://github.com/${REPO}"
+    if [ "$INSTALL_SERVER" = "1" ]; then
+        echo "Server repo:   https://github.com/${SERVER_REPO}"
+    fi
+    if [ "$INSTALL_CLI" = "1" ]; then
+        echo "CLI repo:      https://github.com/${CLI_REPO}"
+    fi
     echo ""
     exit 0
 fi
@@ -376,42 +508,56 @@ fi
 echo "Next steps:"
 echo ""
 
-if [ "$INSTALL_TYPE" = "system" ]; then
-    echo "  1. Initialize the server:"
-    echo "     sudo muxi-server init"
+STEP_NUM=1
+
+if [ "$INSTALL_SERVER" = "1" ]; then
+    if [ "$INSTALL_TYPE" = "system" ]; then
+        echo "  ${STEP_NUM}. Initialize the server:"
+        echo "     sudo muxi-server init"
+        STEP_NUM=$((STEP_NUM + 1))
+        echo ""
+        echo "  ${STEP_NUM}. Start the server:"
+        echo "     sudo muxi-server start"
+        STEP_NUM=$((STEP_NUM + 1))
+        echo ""
+    else
+        echo "  ${STEP_NUM}. Initialize the server:"
+        echo "     muxi-server init"
+        STEP_NUM=$((STEP_NUM + 1))
+        echo ""
+        echo "  ${STEP_NUM}. Start the server:"
+        echo "     muxi-server start"
+        STEP_NUM=$((STEP_NUM + 1))
+        echo ""
+    fi
+fi
+
+if [ "$INSTALL_CLI" = "1" ] && [ "$INSTALL_SERVER" = "1" ]; then
+    echo "  ${STEP_NUM}. Connect CLI to local server:"
+    echo "     muxi profile add localhost http://localhost:7890"
+    STEP_NUM=$((STEP_NUM + 1))
     echo ""
-    echo "  2. Start the server:"
-    echo "     sudo muxi-server start"
+elif [ "$INSTALL_CLI" = "1" ]; then
+    echo "  ${STEP_NUM}. Connect CLI to a remote server:"
+    echo "     muxi profile add production https://your-server.com:7890"
+    STEP_NUM=$((STEP_NUM + 1))
     echo ""
-    echo "  3. Check server status:"
-    echo "     curl http://localhost:7890/health"
-else
-    echo "  1. Initialize the server:"
-    echo "     muxi-server init"
+fi
+
+if [ "$INSTALL_CLI" = "1" ]; then
+    echo "  ${STEP_NUM}. Try CLI commands:"
+    echo "     muxi formation list"
+    echo "     muxi formation deploy"
+    STEP_NUM=$((STEP_NUM + 1))
     echo ""
-    echo "  2. Start the server:"
-    echo "     muxi-server start"
-    echo ""
-    echo "  3. Check server status:"
-    echo "     curl http://localhost:7890/health"
 fi
 
 echo ""
 echo "Documentation: https://docs.muxi.org/getting-started"
-echo "Repository:    https://github.com/${REPO}"
-echo ""
-
-# Optional: offer to run init
-if [ -t 0 ]; then  # Check if running interactively
-    echo ""
-    read -p "Run 'muxi-server init' now? [y/N] " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo ""
-        if [ "$INSTALL_TYPE" = "system" ]; then
-            sudo "$INSTALL_DIR/muxi-server" init
-        else
-            "$INSTALL_DIR/muxi-server" init
-        fi
-    fi
+if [ "$INSTALL_SERVER" = "1" ]; then
+    echo "Server repo:   https://github.com/${SERVER_REPO}"
 fi
+if [ "$INSTALL_CLI" = "1" ]; then
+    echo "CLI repo:      https://github.com/${CLI_REPO}"
+fi
+echo ""

@@ -14,15 +14,26 @@ This repository hosts installation scripts for MUXI tools:
 
 **Decoupled from code repositories** to allow independent evolution of installation methods.
 
+**Key Innovation:** Single installer with component selection - users choose what to install instead of navigating multiple repos.
+
 ---
 
 ## Installation Methods
 
-### 1. One-Command Install Scripts
+### 1. Unified Install Script (Primary Method)
 
 **Linux / macOS:**
 ```bash
+# Interactive - prompts for component selection
 curl -sSL https://install.muxi.org | sudo bash
+
+# Non-interactive - CLI only (default for automation)
+curl -sSL https://install.muxi.org | bash -s -- --non-interactive
+
+# Non-interactive - specific components
+curl -sSL https://install.muxi.org | bash -s -- --non-interactive --components=server,cli
+curl -sSL https://install.muxi.org | bash -s -- --non-interactive --components=cli
+curl -sSL https://install.muxi.org | bash -s -- --non-interactive --components=server
 ```
 
 **Windows:**
@@ -30,46 +41,68 @@ curl -sSL https://install.muxi.org | sudo bash
 irm https://install.muxi.org/windows.ps1 | iex
 ```
 
-**Installs:**
-- ✅ `muxi-server` - Server binary
-- ✅ `muxi-cli` (future) - CLI tool
-- ✅ Configuration directories
-- ✅ Auto-detection and setup
+**Component Options:**
+1. **Server + CLI** (Interactive default)
+   - Full local development setup
+   - Server binary: `muxi-server`
+   - CLI binary: `muxi`
+   - Best for: Local development, learning, testing
 
-**Philosophy:** Full local setup - both server and CLI for development.
+2. **CLI only** (Non-interactive default)
+   - Lightweight client for remote server management
+   - CLI binary: `muxi`
+   - Best for: Managing remote production servers
+
+3. **Server only**
+   - Production-optimized server installation
+   - Server binary: `muxi-server`
+   - Best for: Production deployments, headless servers
+
+**Philosophy:** One installer, flexible deployment - users explicitly choose their use case.
 
 ---
 
 ### 2. Homebrew (Package Manager)
 
-**Three formulae approach:**
+**macOS/Linux package manager alternative for advanced users:**
 
 ```bash
-# Most users (remote server management)
+# CLI only (when available)
 brew install muxi-ai/tap/muxi-cli
 
-# Production servers (API-managed, no CLI)
+# Server only (currently available)
 brew install muxi-ai/tap/muxi-server
 
-# Local developers (full setup)
+# Both components (when available)
 brew install muxi-ai/tap/muxi
 ```
 
 **Structure:**
 ```
 Formula/
-├── muxi-cli.rb       # CLI only (lightweight, for remote management) - FUTURE
-├── muxi-server.rb    # Server only (production deployments) - EXISTS
-└── muxi.rb           # Meta-package (depends on both) - FUTURE
+├── muxi-cli.rb       # CLI only (lightweight, for remote management) - COMING SOON
+├── muxi-server.rb    # Server only (production deployments) - AVAILABLE NOW
+└── muxi.rb           # Meta-package (depends on both) - COMING SOON
 ```
 
 > **Note:** Currently only `muxi-server.rb` exists. Once CLI is built, we'll create:
 > - `muxi-cli.rb` - Standalone CLI formula
 > - `muxi.rb` - Unified meta-package that depends on both server and CLI
 
-**Philosophy:** User chooses what they need - separation of concerns.
+**Philosophy:** Package manager control - separate components for granular dependency management.
 
 **Repository:** [github.com/muxi-ai/homebrew-tap](https://github.com/muxi-ai/homebrew-tap) (separate from install scripts - follows Homebrew convention)
+
+---
+
+### Installation Method Comparison
+
+| Method | Best For | Pros | Cons |
+|--------|----------|------|------|
+| **Unified Installer** | Most users, quick start | • One command<br>• Component selection<br>• Works everywhere | • Requires curl<br>• Manual updates |
+| **Homebrew** | macOS/Linux power users | • Package management<br>• Auto-updates<br>• Dependency tracking | • macOS/Linux only<br>• Requires Homebrew |
+
+**Recommendation:** Use the unified installer (`install.muxi.org`) unless you specifically need Homebrew's package management features.
 
 ---
 
