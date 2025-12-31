@@ -10,7 +10,7 @@ This repository hosts installation scripts for MUXI tools:
 - `install.sh` - Unix/Linux/macOS installation
 - `install.ps1` - Windows PowerShell installation
 
-**Hosted at:** `install.muxi.org` (serves scripts directly)
+**Hosted at:** `muxi.org/install` (serves scripts directly)
 
 **Decoupled from code repositories** to allow independent evolution of installation methods.
 
@@ -25,20 +25,20 @@ This repository hosts installation scripts for MUXI tools:
 **Linux / macOS:**
 ```bash
 # Interactive - prompts for component selection
-curl -sSL https://install.muxi.org | sudo bash
+curl -sSL https://muxi.org/install | sudo bash
 
 # Non-interactive - CLI only (default for automation)
-curl -sSL https://install.muxi.org | bash -s -- --non-interactive
+curl -sSL https://muxi.org/install | bash -s -- --non-interactive
 
 # Non-interactive - specific components
-curl -sSL https://install.muxi.org | bash -s -- --non-interactive --components=server,cli
-curl -sSL https://install.muxi.org | bash -s -- --non-interactive --components=cli
-curl -sSL https://install.muxi.org | bash -s -- --non-interactive --components=server
+curl -sSL https://muxi.org/install | bash -s -- --non-interactive --components=server,cli
+curl -sSL https://muxi.org/install | bash -s -- --non-interactive --components=cli
+curl -sSL https://muxi.org/install | bash -s -- --non-interactive --components=server
 ```
 
 **Windows:**
 ```powershell
-irm https://install.muxi.org/windows.ps1 | iex
+irm https://muxi.org/install/windows.ps1 | iex
 ```
 
 **Component Options:**
@@ -67,26 +67,15 @@ irm https://install.muxi.org/windows.ps1 | iex
 **macOS/Linux package manager alternative for advanced users:**
 
 ```bash
-# CLI only (when available)
-brew install muxi-ai/tap/muxi-cli
-
-# Server only (currently available)
-brew install muxi-ai/tap/muxi-server
-
-# Both components (when available)
 brew install muxi-ai/tap/muxi
 ```
 
 **Structure:**
 ```
 Formula/
-├── muxi-cli.rb       # CLI only (lightweight, for remote management) - COMING SOON
-├── muxi-server.rb    # Server only (production deployments) - AVAILABLE NOW
-└── muxi.rb           # Meta-package (depends on both) - COMING SOON
+└── muxi.rb
 ```
 
-> **Note:** Currently only `muxi-server.rb` exists. Once CLI is built, we'll create:
-> - `muxi-cli.rb` - Standalone CLI formula
 > - `muxi.rb` - Unified meta-package that depends on both server and CLI
 
 **Philosophy:** Package manager control - separate components for granular dependency management.
@@ -102,7 +91,7 @@ Formula/
 | **Unified Installer** | Most users, quick start | • One command<br>• Component selection<br>• Works everywhere | • Requires curl<br>• Manual updates |
 | **Homebrew** | macOS/Linux power users | • Package management<br>• Auto-updates<br>• Dependency tracking | • macOS/Linux only<br>• Requires Homebrew |
 
-**Recommendation:** Use the unified installer (`install.muxi.org`) unless you specifically need Homebrew's package management features.
+**Recommendation:** Use the unified installer (`muxi.org/install`) unless you specifically need Homebrew's package management features.
 
 ---
 
@@ -179,7 +168,7 @@ $ muxi formation list
 → Install MUXI Server locally? [Y/n]: y
 
 ✓ Installing MUXI Server...
-  curl -sSL https://install.muxi.org | bash
+  curl -sSL https://muxi.org/install | bash
 ✓ Installed successfully
 ✓ Initializing server...
 ✓ Added profile 'localhost' as default
