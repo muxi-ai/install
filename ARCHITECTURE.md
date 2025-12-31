@@ -25,38 +25,34 @@ This repository hosts installation scripts for MUXI tools:
 **Linux / macOS:**
 ```bash
 # Interactive - prompts for component selection
-curl -sSL https://muxi.org/install | sudo bash
+curl -fsSL https://muxi.org/install | bash
 
-# Non-interactive - CLI only (default for automation)
-curl -sSL https://muxi.org/install | bash -s -- --non-interactive
+# With sudo for production (/usr/local/bin)
+curl -fsSL https://muxi.org/install | sudo bash
 
-# Non-interactive - specific components
-curl -sSL https://muxi.org/install | bash -s -- --non-interactive --components=server,cli
-curl -sSL https://muxi.org/install | bash -s -- --non-interactive --components=cli
-curl -sSL https://muxi.org/install | bash -s -- --non-interactive --components=server
+# Non-interactive - Server + CLI (default)
+curl -fsSL https://muxi.org/install | bash -s -- --non-interactive
+
+# CLI only
+curl -fsSL https://muxi.org/install | bash -s -- --cli-only
 ```
 
 **Windows:**
 ```powershell
-irm https://muxi.org/install/windows.ps1 | iex
+irm https://muxi.org/install | iex
 ```
 
 **Component Options:**
-1. **Server + CLI** (Interactive default)
+1. **Server + CLI** (default)
    - Full local development setup
    - Server binary: `muxi-server`
    - CLI binary: `muxi`
    - Best for: Local development, learning, testing
 
-2. **CLI only** (Non-interactive default)
+2. **CLI only** (`--cli-only` flag)
    - Lightweight client for remote server management
    - CLI binary: `muxi`
    - Best for: Managing remote production servers
-
-3. **Server only**
-   - Production-optimized server installation
-   - Server binary: `muxi-server`
-   - Best for: Production deployments, headless servers
 
 **Philosophy:** One installer, flexible deployment - users explicitly choose their use case.
 

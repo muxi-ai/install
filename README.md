@@ -120,4 +120,4 @@ Or set `telemetry: false` in `~/.muxi/config.yaml`.
 
 ## License
 
-MIT License
+Apache-2.0

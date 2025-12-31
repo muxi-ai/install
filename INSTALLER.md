@@ -5,7 +5,7 @@
 Single-script installer that downloads and installs MUXI Server and/or CLI from GitHub releases.
 
 ```bash
-curl -fsSL https://muxi.sh/install | bash
+curl -fsSL https://muxi.org/install | bash
 ```
 
 ## UI Flow
