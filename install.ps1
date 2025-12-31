@@ -1,271 +1,389 @@
-# MUXI Server - Windows Installation Script
-# Usage: irm https://install.muxi.org/windows.ps1 | iex
-# Or:    Invoke-RestMethod -Uri https://install.muxi.org/windows.ps1 | Invoke-Expression
+# MUXI Installer - Windows
+# Usage: irm https://muxi.org/install | iex
+#
+# TODO: This script needs to be tested on a Windows machine!
 
 param(
-    [string]$Version = "latest",
-    [switch]$AddToPath = $false,
+    [switch]$NonInteractive,
+    [switch]$CliOnly,
+    [switch]$SkipDownload,
+    [switch]$DryRun,
     [switch]$Help
 )
 
 $ErrorActionPreference = "Stop"
 
+# Colors (gold brand color #c98b45)
+$Gold = "`e[38;2;201;139;69m"
+$Green = "`e[32m"
+$Blue = "`e[34m"
+$Cyan = "`e[36m"
+$Red = "`e[31m"
+$Reset = "`e[0m"
+
+# Symbols
+$Check = "${Green}✓${Reset}"
+$Cross = "${Red}✗${Reset}"
+$Arrow = "${Blue}→${Reset}"
+
+# URLs
+$TelemetryUrl = "https://telemetry.muxi.org"
+
 # Display help
 if ($Help) {
     Write-Host @"
-MUXI Server - Windows Installation Script
+MUXI Installer - Windows
 
 USAGE:
-    irm https://install.muxi.org/windows.ps1 | iex
+    irm https://muxi.org/install | iex
     
-    Or with options:
-    irm https://install.muxi.org/windows.ps1 | iex -Version v0.20251024.0 -AddToPath
-
 OPTIONS:
-    -Version <version>   Install specific version (default: latest)
-    -AddToPath           Add MUXI to system PATH (requires admin)
-    -Help                Show this help message
+    -NonInteractive   Skip prompts, use defaults
+    -CliOnly          Install CLI only (no server)
+    -SkipDownload     Skip downloads (testing)
+    -DryRun           Download but don't install
+    -Help             Show this help
 
 EXAMPLES:
-    # Install latest version
-    irm https://install.muxi.org/windows.ps1 | iex
+    # Interactive install
+    irm https://muxi.org/install | iex
     
-    # Install specific version
-    irm https://install.muxi.org/windows.ps1 | iex -Version v0.20251024.0
-    
-    # Install and add to PATH
-    irm https://install.muxi.org/windows.ps1 | iex -AddToPath
-
-AFTER INSTALLATION:
-    muxi-server init       Initialize configuration
-    muxi-server serve      Start the server
-    muxi-server version    Show version info
-
-DOCUMENTATION:
-    https://github.com/muxi-ai/server/blob/main/docs/windows-dev.md
+    # CLI only
+    irm https://muxi.org/install | iex -CliOnly
 "@
     exit 0
 }
 
-# ASCII Art Banner
-Write-Host @"
+# Banner
+$Banner = "${Gold}
+ ███╗   ███╗██╗   ██╗██╗  ██╗██╗
+ ████╗ ████║██║   ██║╚██╗██╔╝██║
+ ██╔████╔██║██║   ██║ ╚███╔╝ ██║
+ ██║╚██╔╝██║██║   ██║ ██╔██╗ ██║
+ ██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗██║
+ ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝
+${Reset}"
 
-    ███╗   ███╗██╗   ██╗██╗  ██╗██╗
-    ████╗ ████║██║   ██║╚██╗██╔╝██║
-    ██╔████╔██║██║   ██║ ╚███╔╝ ██║
-    ██║╚██╔╝██║██║   ██║ ██╔██╗ ██║
-    ██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗██║
-    ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝
-    
-    MUXI Server - Windows Installer
-    https://github.com/muxi-ai/server
-
-"@ -ForegroundColor Cyan
+# Paths
+$MuxiDir = "$env:USERPROFILE\.muxi"
+$InstallDir = "$env:LOCALAPPDATA\MUXI\bin"
+$ConfigFile = "$MuxiDir\config.yaml"
 
 # Detect architecture
-$arch = if ([Environment]::Is64BitOperatingSystem) {
-    if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") {
-        "arm64"
-    } else {
-        "amd64"
-    }
+$Arch = if ([Environment]::Is64BitOperatingSystem) {
+    if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "amd64" }
 } else {
-    Write-Host "❌ Error: 32-bit Windows is not supported" -ForegroundColor Red
+    Write-Host "${Cross} 32-bit Windows is not supported" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "🔍 Detected: Windows $arch" -ForegroundColor Green
-Write-Host ""
-
-# Determine version to install
-$githubRepo = "muxi-ai/server"
-$installVersion = $Version
-
-if ($Version -eq "latest") {
-    Write-Host "📡 Fetching latest release info..."
+# Get OS machine ID (deterministic)
+function Get-OSMachineId {
     try {
-        $latestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/$githubRepo/releases/latest"
-        $installVersion = $latestRelease.tag_name
-        Write-Host "✓ Latest version: $installVersion" -ForegroundColor Green
+        $uuid = (Get-CimInstance -Class Win32_ComputerSystemProduct).UUID
+        return $uuid
     } catch {
-        Write-Host "⚠️  Warning: Could not fetch latest release, using fallback" -ForegroundColor Yellow
-        $installVersion = "v0.20251024.0"
+        return ""
     }
-} else {
-    Write-Host "📦 Installing version: $installVersion"
 }
 
-Write-Host ""
+# Generate deterministic machine ID
+function Get-MachineId {
+    # Check if already in config
+    if (Test-Path $ConfigFile) {
+        $content = Get-Content $ConfigFile -Raw
+        if ($content -match "machine_id:\s*(.+)") {
+            return $matches[1].Trim()
+        }
+    }
+    
+    # Generate from OS machine ID
+    $osId = Get-OSMachineId
+    if ($osId) {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes("${osId}muxi")
+        $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+        $hashHex = [BitConverter]::ToString($hash) -replace '-', ''
+        $machineId = "$($hashHex.Substring(0,8))-$($hashHex.Substring(8,4))-$($hashHex.Substring(12,4))-$($hashHex.Substring(16,4))-$($hashHex.Substring(20,12))".ToLower()
+    } else {
+        # Fallback to random GUID
+        $machineId = [guid]::NewGuid().ToString()
+    }
+    
+    # Create config
+    New-Item -ItemType Directory -Force -Path $MuxiDir | Out-Null
+    @"
+machine_id: $machineId
+telemetry: true
+"@ | Set-Content $ConfigFile
+    
+    return $machineId
+}
 
-# Set installation directory
-$installDir = "$env:LOCALAPPDATA\muxi\bin"
-$configDir = "$env:APPDATA\muxi\server"
-$binaryName = "muxi-server.exe"
-$downloadName = "muxi-server-windows-$arch.exe"
+# Get geo info (cached)
+function Get-GeoInfo {
+    $geoFile = "$MuxiDir\geo.json"
+    $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    
+    # Check cache (24h)
+    if (Test-Path $geoFile) {
+        try {
+            $geo = Get-Content $geoFile | ConvertFrom-Json
+            if ($geo.cached_at -and ($now - $geo.cached_at) -lt 86400) {
+                return $geo
+            }
+        } catch {}
+    }
+    
+    # Fetch fresh
+    try {
+        $response = Invoke-RestMethod -Uri "http://ip-api.com/json/" -TimeoutSec 2
+        $geo = @{
+            ip = $response.query
+            country_code = $response.countryCode
+            cached_at = $now
+        }
+        New-Item -ItemType Directory -Force -Path $MuxiDir | Out-Null
+        $geo | ConvertTo-Json | Set-Content $geoFile
+        return $geo
+    } catch {
+        return @{ ip = ""; country_code = "" }
+    }
+}
+
+# Send telemetry (async)
+function Send-Telemetry {
+    param($Success, $DurationMs, $InstallServer, $InstallCli)
+    
+    # Check opt-out
+    if ($env:MUXI_TELEMETRY -eq "0") { return }
+    
+    $geo = Get-GeoInfo
+    $ts = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    
+    $payload = @{
+        module = "install"
+        machine_id = $script:MachineId
+        ts = $ts
+        ip = $geo.ip
+        country = $geo.country_code
+        payload = @{
+            version = "0.1.0"
+            install_method = "powershell"
+            os = "windows"
+            arch = $Arch
+            server = $InstallServer
+            cli = $InstallCli
+            success = $Success
+            duration_ms = $DurationMs
+        }
+    } | ConvertTo-Json -Depth 3
+    
+    # Fire and forget
+    Start-Job -ScriptBlock {
+        param($url, $body)
+        try {
+            Invoke-RestMethod -Uri $url -Method Post -Body $body -ContentType "application/json" -TimeoutSec 5 | Out-Null
+        } catch {}
+    } -ArgumentList "$TelemetryUrl/v1/telemetry/", $payload | Out-Null
+}
+
+# Send optin (async)
+function Send-Optin {
+    param($Email)
+    
+    $geo = Get-GeoInfo
+    
+    $payload = @{
+        email = $Email
+        machine_id = $script:MachineId
+        ip = $geo.ip
+        country = $geo.country_code
+    } | ConvertTo-Json
+    
+    Start-Job -ScriptBlock {
+        param($url, $body)
+        try {
+            Invoke-RestMethod -Uri $url -Method Post -Body $body -ContentType "application/json" -TimeoutSec 5 | Out-Null
+        } catch {}
+    } -ArgumentList "$TelemetryUrl/v1/optin/", $payload | Out-Null
+}
+
+# Get latest version from GitHub
+function Get-LatestVersion {
+    param($Repo)
+    try {
+        $response = Invoke-WebRequest -Uri "https://github.com/$Repo/releases/latest" -MaximumRedirection 0 -ErrorAction SilentlyContinue
+    } catch {
+        if ($_.Exception.Response.Headers.Location) {
+            $location = $_.Exception.Response.Headers.Location.ToString()
+            if ($location -match "/tag/(.+)$") {
+                return $matches[1]
+            }
+        }
+    }
+    return "v0.1.0"
+}
+
+# Main installation
+$StartTime = Get-Date
+
+# Initialize
+$script:MachineId = Get-MachineId
+$InstallTs = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+
+# Component selection
+$InstallServer = -not $CliOnly
+$InstallCli = $true
+
+# Show banner
+if (-not $NonInteractive) {
+    Write-Host $Banner
+    Write-Host "Welcome to MUXI installer!"
+    Write-Host ""
+    
+    # Interactive component selection
+    if (-not $CliOnly) {
+        Write-Host "${Arrow} What would you like to install?"
+        Write-Host "  ${Gold}◉ Server + CLI (recommended)${Reset}"
+        Write-Host "  ○ CLI only"
+        Write-Host ""
+        Write-Host "Press 1 or 2, then Enter: " -NoNewline
+        $choice = Read-Host
+        if ($choice -eq "2") {
+            $InstallServer = $false
+        }
+        Write-Host ""
+    }
+}
+
+# Show what we're installing
+Write-Host "${Arrow} Platform: windows/${Arch}"
+if ($InstallServer -and $InstallCli) {
+    Write-Host "${Arrow} Installing: Server + CLI"
+} else {
+    Write-Host "${Arrow} Installing: CLI only"
+}
+Write-Host ""
 
 # Create directories
-Write-Host "📁 Creating directories..."
-New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-New-Item -ItemType Directory -Force -Path $configDir | Out-Null
-Write-Host "   → $installDir" -ForegroundColor Gray
-Write-Host "   → $configDir" -ForegroundColor Gray
-Write-Host ""
+New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+New-Item -ItemType Directory -Force -Path $MuxiDir | Out-Null
 
-# Download binary
-$downloadUrl = "https://github.com/$githubRepo/releases/download/$installVersion/$downloadName"
-$binaryPath = Join-Path $installDir $binaryName
-
-Write-Host "⬇️  Downloading MUXI Server..."
-Write-Host "   → $downloadUrl" -ForegroundColor Gray
-
-try {
-    # Use BITS transfer for better progress and reliability
-    Import-Module BitsTransfer
-    Start-BitsTransfer -Source $downloadUrl -Destination $binaryPath -Description "Downloading MUXI Server"
-    Write-Host "✓ Download complete" -ForegroundColor Green
-} catch {
-    Write-Host "⚠️  BITS transfer failed, trying webclient..." -ForegroundColor Yellow
-    try {
-        $webClient = New-Object System.Net.WebClient
-        $webClient.DownloadFile($downloadUrl, $binaryPath)
-        Write-Host "✓ Download complete" -ForegroundColor Green
-    } catch {
-        Write-Host "❌ Error: Failed to download binary" -ForegroundColor Red
-        Write-Host "   URL: $downloadUrl" -ForegroundColor Red
-        Write-Host "   Error: $_" -ForegroundColor Red
-        exit 1
+# Download and install
+if ($SkipDownload) {
+    Write-Host "${Check} Downloaded MUXI Server v0.1.0 (skipped)"
+    Write-Host "${Check} Downloaded MUXI CLI v0.1.0 (skipped)"
+    $ServerVersion = "v0.1.0"
+    $CliVersion = "v0.1.0"
+} else {
+    # Install Server
+    if ($InstallServer) {
+        $ServerVersion = Get-LatestVersion "muxi-ai/server"
+        $binaryName = "muxi-server-windows-${Arch}.exe"
+        $downloadUrl = "https://github.com/muxi-ai/server/releases/download/$ServerVersion/$binaryName"
+        $targetPath = "$InstallDir\muxi-server.exe"
+        
+        Write-Host "${Blue}⠋${Reset} Downloading MUXI Server..." -NoNewline
+        try {
+            Invoke-WebRequest -Uri $downloadUrl -OutFile $targetPath -UseBasicParsing
+            Write-Host "`r${Check} Downloaded MUXI Server $ServerVersion    "
+        } catch {
+            Write-Host "`r${Cross} Failed to download MUXI Server"
+            $EndTime = Get-Date
+            $DurationMs = [int](($EndTime - $StartTime).TotalMilliseconds)
+            Send-Telemetry -Success $false -DurationMs $DurationMs -InstallServer $InstallServer -InstallCli $InstallCli
+            exit 1
+        }
+    }
+    
+    # Install CLI
+    if ($InstallCli) {
+        $CliVersion = Get-LatestVersion "muxi-ai/cli"
+        $binaryName = "muxi-windows-${Arch}.exe"
+        $downloadUrl = "https://github.com/muxi-ai/cli/releases/download/$CliVersion/$binaryName"
+        $targetPath = "$InstallDir\muxi.exe"
+        
+        Write-Host "${Blue}⠋${Reset} Downloading MUXI CLI..." -NoNewline
+        try {
+            Invoke-WebRequest -Uri $downloadUrl -OutFile $targetPath -UseBasicParsing
+            Write-Host "`r${Check} Downloaded MUXI CLI $CliVersion    "
+        } catch {
+            Write-Host "`r${Cross} Failed to download MUXI CLI"
+            $EndTime = Get-Date
+            $DurationMs = [int](($EndTime - $StartTime).TotalMilliseconds)
+            Send-Telemetry -Success $false -DurationMs $DurationMs -InstallServer $InstallServer -InstallCli $InstallCli
+            exit 1
+        }
     }
 }
 
+# Calculate duration
+$EndTime = Get-Date
+$DurationMs = [int](($EndTime - $StartTime).TotalMilliseconds)
+
+Write-Host ""
+Write-Host "${Check} Installation complete!"
 Write-Host ""
 
-# Verify binary
-if (-not (Test-Path $binaryPath)) {
-    Write-Host "❌ Error: Binary not found after download" -ForegroundColor Red
-    exit 1
-}
+# Send telemetry
+Send-Telemetry -Success $true -DurationMs $DurationMs -InstallServer $InstallServer -InstallCli $InstallCli
 
-$fileSize = (Get-Item $binaryPath).Length / 1MB
-Write-Host "✓ Binary verified ($([math]::Round($fileSize, 2)) MB)" -ForegroundColor Green
-Write-Host ""
-
-# Test binary
-Write-Host "🧪 Testing binary..."
-try {
-    $versionOutput = & $binaryPath version 2>&1
-    Write-Host "✓ Binary is working" -ForegroundColor Green
-    Write-Host ""
-} catch {
-    Write-Host "⚠️  Warning: Could not verify binary (may still work)" -ForegroundColor Yellow
+# Update PATH
+$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($currentPath -notlike "*$InstallDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$InstallDir", "User")
+    $env:Path = "$env:Path;$InstallDir"
+    Write-Host "${Check} Added to PATH"
+    Write-Host "   Restart your terminal for changes to take effect"
     Write-Host ""
 }
 
-# Add to PATH (optional)
-if ($AddToPath) {
-    Write-Host "🔧 Adding to PATH..."
+# Email opt-in (interactive only)
+if (-not $NonInteractive) {
+    $line = "─" * 60
+    Write-Host $line
+    Write-Host "${Arrow} STAY IN THE LOOP"
+    Write-Host $line
+    Write-Host "Get security alerts, release notes, and early access to new features."
+    Write-Host "(low volume, unsubscribe anytime)"
+    Write-Host ""
+    $email = Read-Host "Email [Enter to skip]"
     
-    # Check if running as admin
-    $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    
-    if ($isAdmin) {
-        # Add to system PATH
-        $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
-        if ($currentPath -notlike "*$installDir*") {
-            [Environment]::SetEnvironmentVariable("Path", "$currentPath;$installDir", "Machine")
-            Write-Host "✓ Added to system PATH (all users)" -ForegroundColor Green
-            Write-Host "   Restart your terminal for changes to take effect" -ForegroundColor Yellow
-        } else {
-            Write-Host "✓ Already in system PATH" -ForegroundColor Green
-        }
+    if ($email) {
+        Write-Host "Email: $email"
+        Write-Host ""
+        Send-Optin -Email $email
+        
+        # Update config
+        Add-Content -Path $ConfigFile -Value "email_optin: true"
+        
+        Write-Host "${Check} Subscribed! Check your inbox for a welcome email."
     } else {
-        # Add to user PATH
-        $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
-        if ($currentPath -notlike "*$installDir*") {
-            [Environment]::SetEnvironmentVariable("Path", "$currentPath;$installDir", "User")
-            Write-Host "✓ Added to user PATH" -ForegroundColor Green
-            Write-Host "   Restart your terminal for changes to take effect" -ForegroundColor Yellow
-        } else {
-            Write-Host "✓ Already in user PATH" -ForegroundColor Green
-        }
+        Write-Host "Email: Skipped"
     }
-    
-    # Update current session
-    $env:Path = "$env:Path;$installDir"
+    Write-Host $line
     Write-Host ""
 }
 
-# Installation summary
-Write-Host "═══════════════════════════════════════════════" -ForegroundColor Green
-Write-Host "✅ MUXI Server installed successfully!" -ForegroundColor Green
-Write-Host "═══════════════════════════════════════════════" -ForegroundColor Green
+# Next steps
+Write-Host "Next steps:"
 Write-Host ""
-Write-Host "📍 Installation Details:" -ForegroundColor Cyan
-Write-Host "   Binary:  $binaryPath" -ForegroundColor Gray
-Write-Host "   Config:  $configDir" -ForegroundColor Gray
-Write-Host "   Version: $installVersion" -ForegroundColor Gray
-Write-Host ""
-
-if (-not $AddToPath) {
-    Write-Host "💡 Quick Start:" -ForegroundColor Cyan
-    Write-Host "   Add to PATH for easier access:" -ForegroundColor Gray
-    Write-Host "   `$env:Path += `";$installDir`"" -ForegroundColor Yellow
+if ($InstallServer) {
+    Write-Host "  1. Initialize the server:"
+    Write-Host "     ${Cyan}muxi-server init${Reset}"
     Write-Host ""
-}
-
-Write-Host "🚀 Next Steps:" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "   1. Initialize configuration:" -ForegroundColor White
-if ($AddToPath -or $env:Path -like "*$installDir*") {
-    Write-Host "      muxi-server init" -ForegroundColor Yellow
+    Write-Host "  2. Start the server:"
+    Write-Host "     ${Cyan}muxi-server start${Reset}"
 } else {
-    Write-Host "      & `"$binaryPath`" init" -ForegroundColor Yellow
+    Write-Host "  1. Connect to a server:"
+    Write-Host "     ${Cyan}muxi profiles add${Reset}"
+    Write-Host ""
+    Write-Host "  2. Create a formation:"
+    Write-Host "     ${Cyan}muxi new formation${Reset}"
+    Write-Host ""
+    Write-Host "You can also start with a demo formation:"
+    Write-Host "  ${Cyan}muxi pull @muxi/quickstart${Reset}"
 }
 Write-Host ""
-Write-Host "   2. Start the server:" -ForegroundColor White
-if ($AddToPath -or $env:Path -like "*$installDir*") {
-    Write-Host "      muxi-server serve" -ForegroundColor Yellow
-} else {
-    Write-Host "      & `"$binaryPath`" serve" -ForegroundColor Yellow
-}
+Write-Host "Docs: https://muxi.org/docs"
 Write-Host ""
-Write-Host "   3. Deploy a formation:" -ForegroundColor White
-Write-Host "      See: https://github.com/muxi-ai/server/blob/main/docs/windows-dev.md" -ForegroundColor Yellow
-Write-Host ""
-
-# Docker Desktop check
-Write-Host "📋 Requirements Check:" -ForegroundColor Cyan
-Write-Host ""
-
-$dockerInstalled = $false
-try {
-    $dockerVersion = docker --version 2>$null
-    if ($dockerVersion) {
-        Write-Host "   ✓ Docker Desktop: $dockerVersion" -ForegroundColor Green
-        $dockerInstalled = $true
-    }
-} catch {
-    # Docker not found
-}
-
-if (-not $dockerInstalled) {
-    Write-Host "   ⚠️  Docker Desktop: Not installed" -ForegroundColor Yellow
-    Write-Host "      Required for SIF runtime support" -ForegroundColor Gray
-    Write-Host "      Install from: https://www.docker.com/products/docker-desktop" -ForegroundColor Gray
-}
-
-Write-Host ""
-
-# Firewall reminder
-Write-Host "🔥 Firewall Notice:" -ForegroundColor Cyan
-Write-Host "   MUXI Server uses port 7890 by default" -ForegroundColor Gray
-Write-Host "   You may need to allow it in Windows Firewall" -ForegroundColor Gray
-Write-Host ""
-
-# Docs link
-Write-Host "📚 Documentation:" -ForegroundColor Cyan
-Write-Host "   https://github.com/muxi-ai/server/blob/main/docs/windows-dev.md" -ForegroundColor Gray
-Write-Host ""
-
-Write-Host "═══════════════════════════════════════════════" -ForegroundColor Green
-Write-Host "Happy coding! 🎉" -ForegroundColor Cyan
-Write-Host "═══════════════════════════════════════════════" -ForegroundColor Green

@@ -1,257 +1,123 @@
-# MUXI Installation Scripts
+# MUXI Installer
 
-Official installation scripts for MUXI tools.
+Official installation scripts for MUXI Server and CLI.
 
-**Hosted at:** `install.muxi.org`
+## Quick Install
 
----
-
-## Usage
-
-### Linux / macOS
+### macOS (Homebrew)
 
 ```bash
-# Interactive (prompts for email and component selection)
-curl -sSL https://install.muxi.org | sudo bash
+brew install muxi-ai/tap/muxi
+```
 
-# Non-interactive - installs CLI only by default
-curl -sSL https://install.muxi.org | sudo bash -s -- --non-interactive
+### macOS / Linux
 
-# Non-interactive - install specific components
-curl -sSL https://install.muxi.org | sudo bash -s -- --non-interactive --components=server,cli
-curl -sSL https://install.muxi.org | sudo bash -s -- --non-interactive --components=cli
-curl -sSL https://install.muxi.org | sudo bash -s -- --non-interactive --components=server
+```bash
+curl -fsSL https://muxi.org/install | bash
+```
+
+### Linux (Production)
+
+```bash
+curl -fsSL https://muxi.org/install | sudo bash
 ```
 
 ### Windows
 
 ```powershell
-# Interactive
-irm https://install.muxi.org/windows.ps1 | iex
-
-# Non-interactive
-irm https://install.muxi.org/windows.ps1 | iex -NonInteractive
+irm https://muxi.org/install | iex
 ```
 
----
+## What Gets Installed
 
-## What It Installs
+| Binary | Description |
+|--------|-------------|
+| `muxi-server` | Production infrastructure for running AI agents |
+| `muxi` | CLI for managing formations and deployments |
 
-**MUXI Server** (production-grade agent orchestration)
-- Binary: `muxi-server`
-- Config directory: `~/.muxi/server/`
-- Credentials: Auto-generated on init
-- Install when: Running formations locally or on production servers
+### Install Locations
 
-**MUXI CLI** (coming soon)
-- Binary: `muxi`
-- Config directory: `~/.muxi/`
-- Auto-detects local server
-- Install when: Managing remote servers or local development
+| Method | Binaries | Config |
+|--------|----------|--------|
+| Homebrew | `/opt/homebrew/bin` | `~/.muxi/` |
+| curl (user) | `~/.local/bin` | `~/.muxi/` |
+| curl (sudo) | `/usr/local/bin` | `/etc/muxi/` |
+| Windows | `%LOCALAPPDATA%\MUXI\bin` | `%USERPROFILE%\.muxi\` |
 
----
+## Installation Options
 
-## Installation Flow
+### Flags
 
-### Interactive Mode
+| Flag | Description |
+|------|-------------|
+| `--non-interactive` | Skip prompts, use defaults |
+| `--cli-only` | Install CLI only (no server) |
+| `--dry-run` | Download but don't install (testing) |
 
-```
- ███╗   ███╗██╗   ██╗██╗  ██╗██╗
- ████╗ ████║██║   ██║╚██╗██╔╝██║
- ██╔████╔██║██║   ██║ ╚███╔╝ ██║
- ██║╚██╔╝██║██║   ██║ ██╔██╗ ██║
- ██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗██║
- ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝
-
-MUXI Installation
-
-→ Join the MUXI community? (optional)
-  Get early access to features, workshops, and exclusive content!
-  
-  Email [press Enter to skip]: user@example.com
-
-✓ Thanks for joining!
-
-→ What would you like to install?
-  [1] Server + CLI (recommended for local development)
-  [2] CLI only (for managing remote servers)
-  [3] Server only (for production deployments)
-  
-  Choice [1]: 1
-
-→ Installing: Server + CLI
-
- ███╗   ███╗██╗   ██╗██╗  ██╗██╗
- ████╗ ████║██║   ██║╚██╗██╔╝██║
- ██╔████╔██║██║   ██║ ╚███╔╝ ██║
- ██║╚██╔╝██║██║   ██║ ██╔██╗ ██║
- ██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗██║
- ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝
-
-MUXI Installation
-
-→ Platform: darwin/arm64
-→ Components: Server + CLI
-→ Server binary: /usr/local/bin/muxi-server
-→ Server paths:  ~/.muxi/server/
-→ CLI binary: /usr/local/bin/muxi
-→ CLI config: ~/.muxi/
-
-→ Downloading MUXI Server from GitHub...
-✓ Installed MUXI Server: v0.20251024.3
-! MUXI CLI is not yet available
-
-  The CLI is coming soon! For now, you can:
-  • Manage the server directly with muxi-server commands
-  • Use the REST API
-  • Check https://github.com/muxi-ai/cli for updates
-
-────────────────────────────────────────────────────────────
-✓ Installation complete!
-────────────────────────────────────────────────────────────
-
-→ Configure server now? [Y/n]: y
-
-→ Initializing MUXI Server...
-
-✓ Server ready!
-
-Start server:
-  muxi-server start
-
-Connect CLI to server:
-  muxi profile add localhost http://localhost:7890
-```
-
-### Non-Interactive Mode (Default: CLI only)
+### Examples
 
 ```bash
-curl -sSL https://install.muxi.org | bash -s -- --non-interactive
+# Interactive install (default: Server + CLI)
+curl -fsSL https://muxi.org/install | bash
+
+# Non-interactive (for scripts/CI)
+curl -fsSL https://muxi.org/install | bash -s -- --non-interactive
+
+# CLI only
+curl -fsSL https://muxi.org/install | bash -s -- --cli-only
 ```
 
-```
-! MUXI CLI is not yet available
+## After Installation
 
-  The CLI is coming soon! For now, you can:
-  • Manage the server directly with muxi-server commands
-  • Use the REST API
-  • Check https://github.com/muxi-ai/cli for updates
-
-────────────────────────────────────────────────────────────
-✓ Installation complete!
-────────────────────────────────────────────────────────────
-```
-
-### Non-Interactive Mode (Server Only)
+### Server + CLI
 
 ```bash
-curl -sSL https://install.muxi.org | bash -s -- --non-interactive --components=server
+# Initialize the server
+muxi-server init
+
+# Start the server
+muxi-server start
 ```
 
-```
-✓ Installed MUXI Server: v0.20251024.3
-
-────────────────────────────────────────────────────────────
-✓ Installation complete!
-────────────────────────────────────────────────────────────
-
-Next steps:
-
-  1. Initialize the server:
-     muxi-server init
-
-  2. Start the server:
-     muxi-server start
-```
-
----
-
-## Features
-
-- **Component selection:** Choose what to install (Server, CLI, or both)
-- **Smart defaults:** Interactive mode defaults to "Server + CLI", non-interactive defaults to "CLI only"
-- **Auto-detection:** Automatically detects CI/Docker environments (non-interactive mode)
-- **Optional email:** Community building, easily skippable
-- **Auto-configure:** Offers to run `muxi-server init` after install
-- **Flexible:** Specify components with `--components=server,cli` flag
-- **Safe:** All prompts are optional, never blocks automation
-- **Future-proof:** Gracefully handles CLI not being available yet
-
----
-
-## Use Cases
-
-### For Local Development
-```bash
-curl -sSL https://install.muxi.org | bash
-# Choose option 1: Server + CLI
-```
-Get both server and CLI for full local development experience.
-
-### For Remote Server Management
-```bash
-curl -sSL https://install.muxi.org | bash -s -- --non-interactive
-```
-Installs CLI only by default - lightweight and ready to manage remote servers.
-
-### For Production Servers
-```bash
-curl -sSL https://install.muxi.org | bash -s -- --non-interactive --components=server
-```
-Server-only installation - no CLI overhead, optimized for production.
-
----
-
-## Development
-
-This repository hosts only the installation scripts. The actual MUXI tools are in:
-- Server: [github.com/muxi-ai/server](https://github.com/muxi-ai/server)
-- CLI: [github.com/muxi-ai/cli](https://github.com/muxi-ai/cli) (coming soon)
-- Homebrew: [github.com/muxi-ai/homebrew-tap](https://github.com/muxi-ai/homebrew-tap)
-
----
-
-## Hosting
-
-**Production:** `install.muxi.org`
-
-The installer supports **automatic client detection** - one URL works for all platforms:
+### CLI Only
 
 ```bash
-# Linux/macOS (serves install.sh)
-curl -sSL install.muxi.org | bash
+# Connect to a server
+muxi profiles add
 
-# Windows (serves install.ps1)
-irm install.muxi.org | iex
+# Create a formation
+muxi new formation
 
-# Browser (redirects to docs)
-# Visit https://install.muxi.org in your browser → redirects to muxi.org/docs/install
+# Or start with a demo
+muxi pull @muxi/quickstart
 ```
 
-**How it works:** Detects client via `User-Agent` header and serves the appropriate script.
+## Telemetry
 
-**Hosting options:**
-- ✅ **Cloudflare Workers** (recommended) - Edge computing, free, instant
-- ✅ **Vercel Serverless** - Simple deployment, GitHub integration
-- ✅ **PHP** - Traditional hosting, works everywhere
-- ✅ **Apache .htaccess** - Static hosting, no server-side code
+The installer collects anonymous usage data to help improve MUXI:
+- OS and architecture
+- Install success/failure
+- Duration
 
-See [HOSTING.md](HOSTING.md) for detailed setup instructions.
+**No personal data is collected.** Opt-out:
 
-**Testing locally:**
 ```bash
-# Option 1: PHP built-in server (with detection)
-php -S localhost:8080
-
-# Option 2: Python (static files only)
-python3 -m http.server 8080
-
-# Test
-curl -sSL http://localhost:8080 | bash
+MUXI_TELEMETRY=0 curl -fsSL https://muxi.org/install | bash
 ```
 
----
+Or set `telemetry: false` in `~/.muxi/config.yaml`.
+
+## Documentation
+
+- [INSTALLER.md](INSTALLER.md) - Detailed design decisions
+- [muxi.org/docs](https://muxi.org/docs) - Full documentation
+
+## Related Repositories
+
+- [muxi-ai/server](https://github.com/muxi-ai/server) - MUXI Server
+- [muxi-ai/cli](https://github.com/muxi-ai/cli) - MUXI CLI
+- [muxi-ai/homebrew-tap](https://github.com/muxi-ai/homebrew-tap) - Homebrew formulae
 
 ## License
 
-MIT License - see main MUXI Server [LICENSE](https://github.com/muxi-ai/server/blob/main/LICENSE)
+MIT License
