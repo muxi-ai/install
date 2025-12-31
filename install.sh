@@ -1,12 +1,12 @@
 #!/bin/bash
 #
 # MUXI Installation Script
-# https://get.muxi.ai
+# https://muxi.org/install
 #
 # Usage:
-#   Interactive:       curl -sSL https://get.muxi.ai | bash
-#   Non-interactive:   curl -sSL https://get.muxi.ai | bash -s -- --non-interactive
-#   CLI only:          curl -sSL https://get.muxi.ai | bash -s -- --cli-only
+#   Interactive:       curl -sSL https://muxi.org/install | sudo bash
+#   Non-interactive:   curl -sSL https://muxi.org/install | sudo bash -s --non-interactive
+#   CLI only:          curl -sSL https://muxi.org/install | sudo bash -s --cli-only
 #
 
 set -e
@@ -61,12 +61,12 @@ spin() {
 
 # Banner
 BANNER="${GOLD}
- ███╗   ███╗██╗   ██╗██╗  ██╗██╗
- ████╗ ████║██║   ██║╚██╗██╔╝██║
- ██╔████╔██║██║   ██║ ╚███╔╝ ██║
- ██║╚██╔╝██║██║   ██║ ██╔██╗ ██║
- ██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗██║
- ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝
+███╗   ███╗██╗   ██╗██╗  ██╗██╗
+████╗ ████║██║   ██║╚██╗██╔╝██║
+██╔████╔██║██║   ██║ ╚███╔╝ ██║
+██║╚██╔╝██║██║   ██║ ██╔██╗ ██║
+██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗██║
+╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝
 ${NC}"
 
 # Parse arguments
