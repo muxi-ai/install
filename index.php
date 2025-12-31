@@ -8,9 +8,9 @@
  * - Browser → landing page with instructions
  * 
  * Usage:
- *   curl -sSL install.muxi.org | bash
- *   irm install.muxi.org | iex
- *   wget -qO- install.muxi.org | bash
+ *   curl -sSL muxi.org/install | bash
+ *   irm muxi.org/install | iex
+ *   wget -qO- muxi.org/install | bash
  */
 
 // Get User-Agent
