@@ -27,7 +27,7 @@ $Cross = "${Red}✗${Reset}"
 $Arrow = "${Blue}→${Reset}"
 
 # URLs
-$TelemetryUrl = "https://telemetry.muxi.org"
+$TelemetryUrl = "https://capture.muxi.org"
 
 # Display help
 if ($Help) {

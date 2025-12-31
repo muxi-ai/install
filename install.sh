@@ -11,8 +11,8 @@
 
 set -e
 
-# Telemetry endpoint (TODO: change to https://telemetry.muxi.ai for production)
-TELEMETRY_URL="https://telemetry.local"
+# Telemetry endpoint
+TELEMETRY_URL="https://capture.muxi.org"
 
 # Colors
 RED='\033[0;31m'

@@ -96,7 +96,7 @@ Config directory: `~/.muxi/`
 
 ### 6. Telemetry
 
-**Endpoint**: `https://telemetry.muxi.org/v1/telemetry/`
+**Endpoint**: `https://capture.muxi.org/v1/telemetry/`
 
 **Payload**:
 ```json
@@ -130,7 +130,7 @@ Config directory: `~/.muxi/`
 
 ### 7. Email Opt-in
 
-**Endpoint**: `https://telemetry.muxi.org/v1/optin/`
+**Endpoint**: `https://capture.muxi.org/v1/optin/`
 
 **Payload**:
 ```json
