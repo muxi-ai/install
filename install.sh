@@ -241,9 +241,6 @@ send_telemetry() {
         return
     fi
     
-    local geo=$(get_geo)
-    local country=$(echo "$geo" | grep -o '"country_code":"[^"]*"' | cut -d'"' -f4)
-    
     # Convert to JSON booleans
     local server_json="false"
     local cli_json="false"
@@ -255,7 +252,7 @@ send_telemetry() {
   "module": "install",
   "machine_id": "$MACHINE_ID",
   "ts": "$INSTALL_TS",
-  "country": "$country",
+  "country": "$GEO_COUNTRY",
   "payload": {
     "version": "0.1.0",
     "install_method": "$install_method",
@@ -329,6 +326,13 @@ fi
 MACHINE_ID=$(generate_machine_id)
 INSTALL_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 START_TIME=$(date +%s)
+
+# Get geo and save to config
+GEO_DATA=$(get_geo)
+GEO_COUNTRY=$(echo "$GEO_DATA" | grep -o '"country_code":"[^"]*"' | cut -d'"' -f4)
+if [ -n "$GEO_COUNTRY" ]; then
+    write_config "geo" "$GEO_COUNTRY"
+fi
 
 # Component selection
 INSTALL_SERVER=1

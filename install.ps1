@@ -157,14 +157,13 @@ function Send-Telemetry {
     # Check opt-out
     if ($env:MUXI_TELEMETRY -eq "0") { return }
     
-    $geo = Get-GeoInfo
     $ts = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     
     $payload = @{
         module = "install"
         machine_id = $script:MachineId
         ts = $ts
-        country = $geo.country_code
+        country = $script:GeoCountry
         payload = @{
             version = "0.1.0"
             install_method = "powershell"
@@ -229,6 +228,13 @@ $StartTime = Get-Date
 # Initialize
 $script:MachineId = Get-MachineId
 $InstallTs = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+
+# Get geo and save to config
+$script:GeoData = Get-GeoInfo
+$script:GeoCountry = $script:GeoData.country_code
+if ($script:GeoCountry) {
+    Set-ConfigValue "geo" $script:GeoCountry
+}
 
 # Component selection
 $InstallServer = -not $CliOnly

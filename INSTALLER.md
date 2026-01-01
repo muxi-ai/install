@@ -200,6 +200,7 @@ Created on first install:
 ```yaml
 machine_id: 90bbde51-ef4e-41c9-8ec2-8e270bbbec66
 telemetry: true
+geo: US  # Country code from IP geolocation
 email_optin: true  # Added if user subscribes
 ```
 
