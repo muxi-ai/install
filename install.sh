@@ -242,7 +242,6 @@ send_telemetry() {
     fi
     
     local geo=$(get_geo)
-    local ip=$(echo "$geo" | grep -o '"ip":"[^"]*"' | cut -d'"' -f4)
     local country=$(echo "$geo" | grep -o '"country_code":"[^"]*"' | cut -d'"' -f4)
     
     # Convert to JSON booleans
@@ -256,7 +255,6 @@ send_telemetry() {
   "module": "install",
   "machine_id": "$MACHINE_ID",
   "ts": "$INSTALL_TS",
-  "ip": "$ip",
   "country": "$country",
   "payload": {
     "version": "0.1.0",

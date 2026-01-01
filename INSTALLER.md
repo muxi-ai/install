@@ -104,7 +104,6 @@ Config directory: `~/.muxi/`
   "module": "install",
   "machine_id": "uuid-from-~/.muxi/machine_id",
   "ts": "2025-12-31T16:00:00Z",
-  "ip": "1.2.3.4",
   "country": "US",
   "payload": {
     "version": "0.1.0",

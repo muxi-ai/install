@@ -164,7 +164,6 @@ function Send-Telemetry {
         module = "install"
         machine_id = $script:MachineId
         ts = $ts
-        ip = $geo.ip
         country = $geo.country_code
         payload = @{
             version = "0.1.0"
