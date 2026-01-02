@@ -351,13 +351,12 @@ Write-Host ""
 Send-Telemetry -Success $true -DurationMs $DurationMs -InstallServer $InstallServer -InstallCli $InstallCli
 
 # Update PATH
+$script:PathUpdated = $false
 $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($currentPath -notlike "*$InstallDir*") {
     [Environment]::SetEnvironmentVariable("Path", "$currentPath;$InstallDir", "User")
     $env:Path = "$env:Path;$InstallDir"
-    Write-Host "${Check} Added to PATH"
-    Write-Host "   Restart your terminal for changes to take effect"
-    Write-Host ""
+    $script:PathUpdated = $true
 }
 
 # Email opt-in (interactive only)
@@ -391,13 +390,15 @@ if (-not $NonInteractive) {
 if (-not $NonInteractive -and -not (Test-Headless)) {
     Write-Host ""
     if ($InstallServer) {
-        Write-Host "${Arrow} Learn how to set up your server and deploy your first AI agent in under 2 minutes."
+        Write-Host "${Arrow} Watch how to set up your server and deploy your"
+        Write-Host "  first AI agent in under 2 minutes!"
         $mode = "all"
     } else {
-        Write-Host "${Arrow} Learn how to configure the CLI and deploy your first AI agent in under 2 minutes."
+        Write-Host "${Arrow} Watch how to configure the CLI and deploy your"
+        Write-Host "  first AI agent in under 2 minutes!"
         $mode = "cli"
     }
-    
+    Write-Host ""
     $openVideo = Read-Host "  Open quickstart video? (Y/n)"
     if (-not $openVideo -or $openVideo -eq "y" -or $openVideo -eq "Y") {
         $url = "https://muxi.org/post-install?mode=$mode&ic=$($script:MachineId)"
@@ -426,5 +427,11 @@ if ($InstallServer) {
     Write-Host "  ${Cyan}muxi pull @muxi/quickstart${Reset}"
 }
 Write-Host ""
+
+if ($script:PathUpdated) {
+    Write-Host "${Yellow}Note:${Reset} Restart your terminal for PATH changes to take effect"
+    Write-Host ""
+}
+
 Write-Host "Docs: https://muxi.org/docs"
 Write-Host ""

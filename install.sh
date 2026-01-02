@@ -504,6 +504,7 @@ send_telemetry true $DURATION_MS "curl"
 # ============================================================
 # PATH MANAGEMENT
 # ============================================================
+PATH_UPDATED=0
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     SHELL_NAME=$(basename "$SHELL")
     case "$SHELL_NAME" in
@@ -527,9 +528,7 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         else
             echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$SHELL_CONFIG"
         fi
-        echo -e "${CHECK} Added to $SHELL_CONFIG"
-        echo -e "   Run: ${CYAN}source $SHELL_CONFIG${NC}"
-        echo ""
+        PATH_UPDATED=1
     fi
 fi
 
@@ -566,13 +565,15 @@ fi
 if [ "$NON_INTERACTIVE" = "0" ] && ! is_headless; then
     echo ""
     if [ "$INSTALL_SERVER" = "1" ]; then
-        echo -e "${ARROW} Learn how to set up your server and deploy your first AI agent in under 2 minutes."
+        echo -e "${ARROW} Watch how to set up your server and deploy your"
+        echo "  first AI agent in under 2 minutes!"
         MODE="all"
     else
-        echo -e "${ARROW} Learn how to configure the CLI and deploy your first AI agent in under 2 minutes."
+        echo -e "${ARROW} Watch how to configure the CLI and deploy your"
+        echo "  first AI agent in under 2 minutes!"
         MODE="cli"
     fi
-    
+    echo ""
     read -p "  Open quickstart video? (Y/n): " OPEN_VIDEO
     if [ -z "$OPEN_VIDEO" ] || [ "$OPEN_VIDEO" = "y" ] || [ "$OPEN_VIDEO" = "Y" ]; then
         URL="https://muxi.org/post-install?mode=${MODE}&ic=${MACHINE_ID}"
@@ -605,6 +606,11 @@ else
     echo ""
     echo "You can also start with a demo formation:"
     echo -e "  ${CYAN}muxi pull @muxi/quickstart${NC}"
+    echo ""
+fi
+
+if [ "$PATH_UPDATED" = "1" ]; then
+    echo -e "${YELLOW}Note:${NC} Open a new terminal or run ${CYAN}source $SHELL_CONFIG${NC}"
     echo ""
 fi
 
