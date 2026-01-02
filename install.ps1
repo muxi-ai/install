@@ -387,6 +387,25 @@ if (-not $NonInteractive) {
     Write-Host ""
 }
 
+# Quickstart video prompt (headed machines only)
+if (-not $NonInteractive -and -not (Test-Headless)) {
+    Write-Host ""
+    if ($InstallServer) {
+        Write-Host "${Arrow} Learn how to set up your server and deploy your first AI agent in under 2 minutes."
+        $mode = "all"
+    } else {
+        Write-Host "${Arrow} Learn how to configure the CLI and deploy your first AI agent in under 2 minutes."
+        $mode = "cli"
+    }
+    
+    $openVideo = Read-Host "  Open quickstart video? (Y/n)"
+    if (-not $openVideo -or $openVideo -eq "y" -or $openVideo -eq "Y") {
+        $url = "https://muxi.org/post-install?mode=$mode&ic=$($script:MachineId)"
+        Start-Process $url
+    }
+    Write-Host ""
+}
+
 # Next steps
 Write-Host "Next steps:"
 Write-Host ""

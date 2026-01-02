@@ -561,6 +561,30 @@ if [ "$NON_INTERACTIVE" = "0" ]; then
 fi
 
 # ============================================================
+# QUICKSTART VIDEO PROMPT (headed machines only)
+# ============================================================
+if [ "$NON_INTERACTIVE" = "0" ] && ! is_headless; then
+    echo ""
+    if [ "$INSTALL_SERVER" = "1" ]; then
+        echo -e "${ARROW} Learn how to set up your server and deploy your first AI agent in under 2 minutes."
+        MODE="all"
+    else
+        echo -e "${ARROW} Learn how to configure the CLI and deploy your first AI agent in under 2 minutes."
+        MODE="cli"
+    fi
+    
+    read -p "  Open quickstart video? (Y/n): " OPEN_VIDEO
+    if [ -z "$OPEN_VIDEO" ] || [ "$OPEN_VIDEO" = "y" ] || [ "$OPEN_VIDEO" = "Y" ]; then
+        URL="https://muxi.org/post-install?mode=${MODE}&ic=${MACHINE_ID}"
+        case "$OS" in
+            darwin) open "$URL" ;;
+            linux) xdg-open "$URL" 2>/dev/null || echo "  Open: $URL" ;;
+        esac
+    fi
+    echo ""
+fi
+
+# ============================================================
 # NEXT STEPS
 # ============================================================
 echo "Next steps:"
