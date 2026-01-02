@@ -59,6 +59,23 @@ spin() {
     return $exit_code
 }
 
+# Detect headless environment (no GUI/browser available)
+is_headless() {
+    # SSH session
+    [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ] && return 0
+    
+    # No display (Linux)
+    [ "$OS" = "linux" ] && [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ] && return 0
+    
+    # Docker/container
+    [ -f "/.dockerenv" ] && return 0
+    
+    # CI environments
+    [ -n "$CI" ] && return 0
+    
+    return 1
+}
+
 # Banner
 BANNER="${GOLD}
 ███╗   ███╗██╗   ██╗██╗  ██╗██╗

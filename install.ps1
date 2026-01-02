@@ -77,6 +77,23 @@ $Arch = if ([Environment]::Is64BitOperatingSystem) {
     exit 1
 }
 
+# Detect headless environment (no GUI/browser available)
+function Test-Headless {
+    # SSH session
+    if ($env:SSH_CLIENT -or $env:SSH_TTY) { return $true }
+    
+    # CI environments
+    if ($env:CI) { return $true }
+    
+    # Windows Server Core (no GUI)
+    try {
+        $gui = Get-WindowsFeature -Name "Server-Gui-Shell" -ErrorAction SilentlyContinue
+        if ($gui -and -not $gui.Installed) { return $true }
+    } catch {}
+    
+    return $false
+}
+
 # Get OS machine ID (deterministic)
 function Get-OSMachineId {
     try {
