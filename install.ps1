@@ -399,7 +399,7 @@ if (-not $NonInteractive -and -not (Test-Headless)) {
         $mode = "cli"
     }
     Write-Host ""
-    $openVideo = Read-Host "  Open quickstart video? (Y/n)"
+    $openVideo = Read-Host "  Show the guide? [Y/n]"
     if (-not $openVideo -or $openVideo -eq "y" -or $openVideo -eq "Y") {
         $url = "https://muxi.org/post-install?mode=$mode&ic=$($script:MachineId)"
         Start-Process $url

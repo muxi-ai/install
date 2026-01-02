@@ -574,7 +574,7 @@ if [ "$NON_INTERACTIVE" = "0" ] && ! is_headless; then
         MODE="cli"
     fi
     echo ""
-    read -p "  Open quickstart video? (Y/n): " OPEN_VIDEO
+    read -p "  Show the guide? [Y/n]: " OPEN_VIDEO
     if [ -z "$OPEN_VIDEO" ] || [ "$OPEN_VIDEO" = "y" ] || [ "$OPEN_VIDEO" = "Y" ]; then
         URL="https://muxi.org/post-install?mode=${MODE}&ic=${MACHINE_ID}"
         case "$OS" in
