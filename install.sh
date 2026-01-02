@@ -600,6 +600,8 @@ fi
 # ============================================================
 # NEXT STEPS
 # ============================================================
+echo "Thank you for installing MUXI!"
+echo ""
 echo "Next steps:"
 echo ""
 if [ "$INSTALL_SERVER" = "1" ]; then

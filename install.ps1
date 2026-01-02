@@ -408,6 +408,8 @@ if (-not $NonInteractive -and -not (Test-Headless)) {
 }
 
 # Next steps
+Write-Host "Thank you for installing MUXI!"
+Write-Host ""
 Write-Host "Next steps:"
 Write-Host ""
 if ($InstallServer) {
