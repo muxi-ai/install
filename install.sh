@@ -90,6 +90,7 @@ ${NC}"
 NON_INTERACTIVE=0
 CLI_ONLY=0
 DRY_RUN=0
+SKIP_DOWNLOAD=0
 
 for arg in "$@"; do
     case $arg in
@@ -101,6 +102,9 @@ for arg in "$@"; do
             ;;
         --dry-run)
             DRY_RUN=1
+            ;;
+        --skip-download)
+            SKIP_DOWNLOAD=1
             ;;
     esac
 done
@@ -438,56 +442,64 @@ trap "rm -rf $TMP_DIR" EXIT
 # INSTALL SERVER
 # ============================================================
 if [ "$INSTALL_SERVER" = "1" ]; then
-    BINARY_NAME="muxi-server-${OS}-${ARCH}"
-    
-    # Get version from releases/latest redirect
-    SERVER_VERSION=$(curl -sI "https://github.com/muxi-ai/server/releases/latest" | grep -i location | sed 's|.*/tag/||' | tr -d '\r\n')
-    DOWNLOAD_URL="https://github.com/muxi-ai/server/releases/download/${SERVER_VERSION}/${BINARY_NAME}"
-    
-    printf "${BLUE}⠋${NC} Downloading MUXI Server..."
-    if ! curl -fsSL -o "$TMP_DIR/muxi-server" "$DOWNLOAD_URL" 2>/dev/null; then
+    if [ "$SKIP_DOWNLOAD" = "1" ]; then
+        echo -e "${CHECK} Downloaded MUXI Server v0.0.0 (skipped)"
+    else
+        BINARY_NAME="muxi-server-${OS}-${ARCH}"
+        
+        # Get version from releases/latest redirect
+        SERVER_VERSION=$(curl -sI "https://github.com/muxi-ai/server/releases/latest" | grep -i location | sed 's|.*/tag/||' | tr -d '\r\n')
+        DOWNLOAD_URL="https://github.com/muxi-ai/server/releases/download/${SERVER_VERSION}/${BINARY_NAME}"
+        
+        printf "${BLUE}⠋${NC} Downloading MUXI Server..."
+        if ! curl -fsSL -o "$TMP_DIR/muxi-server" "$DOWNLOAD_URL" 2>/dev/null; then
+            printf "\r\033[K"
+            echo -e "${CROSS} Failed to download MUXI Server"
+            END_TIME=$(date +%s)
+            DURATION_MS=$(( (END_TIME - START_TIME) * 1000 ))
+            send_telemetry false $DURATION_MS "curl"
+            exit 1
+        fi
+        
         printf "\r\033[K"
-        echo -e "${CROSS} Failed to download MUXI Server"
-        END_TIME=$(date +%s)
-        DURATION_MS=$(( (END_TIME - START_TIME) * 1000 ))
-        send_telemetry false $DURATION_MS "curl"
-        exit 1
+        chmod +x "$TMP_DIR/muxi-server"
+        if [ "$DRY_RUN" = "0" ]; then
+            mv "$TMP_DIR/muxi-server" "$INSTALL_DIR/muxi-server"
+        fi
+        echo -e "${CHECK} Downloaded MUXI Server ${SERVER_VERSION}"
     fi
-    
-    printf "\r\033[K"
-    chmod +x "$TMP_DIR/muxi-server"
-    if [ "$DRY_RUN" = "0" ]; then
-        mv "$TMP_DIR/muxi-server" "$INSTALL_DIR/muxi-server"
-    fi
-    echo -e "${CHECK} Downloaded MUXI Server ${SERVER_VERSION}"
 fi
 
 # ============================================================
 # INSTALL CLI
 # ============================================================
 if [ "$INSTALL_CLI" = "1" ]; then
-    BINARY_NAME="muxi-${OS}-${ARCH}"
-    
-    # Get version from releases/latest redirect
-    CLI_VERSION=$(curl -sI "https://github.com/muxi-ai/cli/releases/latest" | grep -i location | sed 's|.*/tag/||' | tr -d '\r\n')
-    DOWNLOAD_URL="https://github.com/muxi-ai/cli/releases/download/${CLI_VERSION}/${BINARY_NAME}"
-    
-    printf "${BLUE}⠋${NC} Downloading MUXI CLI..."
-    if ! curl -fsSL -o "$TMP_DIR/muxi" "$DOWNLOAD_URL" 2>/dev/null; then
+    if [ "$SKIP_DOWNLOAD" = "1" ]; then
+        echo -e "${CHECK} Downloaded MUXI CLI v0.0.0 (skipped)"
+    else
+        BINARY_NAME="muxi-${OS}-${ARCH}"
+        
+        # Get version from releases/latest redirect
+        CLI_VERSION=$(curl -sI "https://github.com/muxi-ai/cli/releases/latest" | grep -i location | sed 's|.*/tag/||' | tr -d '\r\n')
+        DOWNLOAD_URL="https://github.com/muxi-ai/cli/releases/download/${CLI_VERSION}/${BINARY_NAME}"
+        
+        printf "${BLUE}⠋${NC} Downloading MUXI CLI..."
+        if ! curl -fsSL -o "$TMP_DIR/muxi" "$DOWNLOAD_URL" 2>/dev/null; then
+            printf "\r\033[K"
+            echo -e "${CROSS} Failed to download MUXI CLI"
+            END_TIME=$(date +%s)
+            DURATION_MS=$(( (END_TIME - START_TIME) * 1000 ))
+            send_telemetry false $DURATION_MS "curl"
+            exit 1
+        fi
+        
         printf "\r\033[K"
-        echo -e "${CROSS} Failed to download MUXI CLI"
-        END_TIME=$(date +%s)
-        DURATION_MS=$(( (END_TIME - START_TIME) * 1000 ))
-        send_telemetry false $DURATION_MS "curl"
-        exit 1
+        chmod +x "$TMP_DIR/muxi"
+        if [ "$DRY_RUN" = "0" ]; then
+            mv "$TMP_DIR/muxi" "$INSTALL_DIR/muxi"
+        fi
+        echo -e "${CHECK} Downloaded MUXI CLI ${CLI_VERSION}"
     fi
-    
-    printf "\r\033[K"
-    chmod +x "$TMP_DIR/muxi"
-    if [ "$DRY_RUN" = "0" ]; then
-        mv "$TMP_DIR/muxi" "$INSTALL_DIR/muxi"
-    fi
-    echo -e "${CHECK} Downloaded MUXI CLI ${CLI_VERSION}"
 fi
 
 # Calculate duration
