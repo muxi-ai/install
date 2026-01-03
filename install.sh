@@ -580,7 +580,6 @@ fi
 # QUICKSTART VIDEO PROMPT (headed machines only)
 # ============================================================
 if [ "$NON_INTERACTIVE" = "0" ] && ! is_headless; then
-    echo ""
     if [ "$INSTALL_SERVER" = "1" ]; then
         echo -e "${ARROW} Watch how to set up your server and deploy your"
         echo "  first AI agent in under 2 minutes!"

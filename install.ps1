@@ -390,7 +390,6 @@ if (-not $NonInteractive) {
 
 # Quickstart video prompt (headed machines only)
 if (-not $NonInteractive -and -not (Test-Headless)) {
-    Write-Host ""
     if ($InstallServer) {
         Write-Host "${Arrow} Watch how to set up your server and deploy your"
         Write-Host "  first AI agent in under 2 minutes!"
