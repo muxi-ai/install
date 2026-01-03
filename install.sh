@@ -302,12 +302,17 @@ send_optin() {
     local ip=$(echo "$geo" | grep -o '"ip":"[^"]*"' | cut -d'"' -f4)
     local country=$(echo "$geo" | grep -o '"country_code":"[^"]*"' | cut -d'"' -f4)
     
+    # Determine install type
+    local installed="cli"
+    [ "$INSTALL_SERVER" = "1" ] && installed="all"
+    
     local payload=$(cat <<EOF
 {
   "email": "$email",
   "machine_id": "$MACHINE_ID",
   "ip": "$ip",
-  "country": "$country"
+  "country": "$country",
+  "installed": "$installed"
 }
 EOF
 )

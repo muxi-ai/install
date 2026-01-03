@@ -204,15 +204,17 @@ function Send-Telemetry {
 
 # Send optin (async)
 function Send-Optin {
-    param($Email)
+    param($Email, $InstallServer)
     
     $geo = Get-GeoInfo
+    $installed = if ($InstallServer) { "all" } else { "cli" }
     
     $payload = @{
         email = $Email
         machine_id = $script:MachineId
         ip = $geo.ip
         country = $geo.country_code
+        installed = $installed
     } | ConvertTo-Json
     
     Start-Job -ScriptBlock {
@@ -373,7 +375,7 @@ if (-not $NonInteractive) {
     if ($email) {
         Write-Host "Email: $email"
         Write-Host ""
-        Send-Optin -Email $email
+        Send-Optin -Email $email -InstallServer $InstallServer
         
         # Update config
         Add-Content -Path $ConfigFile -Value "email_optin: true"
