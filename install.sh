@@ -23,15 +23,15 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-GOLD='\033[38;2;201;139;69m'  # Brand color #c98b45
+GOLD='\033[38;2;216;137;62m'  # Brand color #d8893e
 NC='\033[0m'
 
 # Banner gradient colors
-C1='\033[38;2;230;169;69m'   # #e6a945
-C2='\033[38;2;230;154;59m'   # #e69a3b
-C3='\033[38;2;230;143;54m'   # #e68f36
-C4='\033[38;2;230;133;49m'   # #e68531
-C5='\033[38;2;224;125;45m'   # #e07d2d
+C1='\033[38;2;217;170;84m'   # #d9aa54
+C2='\033[38;2;218;158;75m'   # #da9e4b
+C3='\033[38;2;219;150;71m'   # #db9647
+C4='\033[38;2;220;143;66m'   # #dc8f42
+C5='\033[38;2;216;137;62m'   # #d8893e
 C6='\033[38;2;191;120;64m'   # #bf7840
 
 # Symbols
@@ -89,6 +89,7 @@ is_headless() {
 
 # Banner (gradient colors, version shown after arch detection)
 print_banner() {
+    echo ""
     echo -e "${C1}███╗   ███╗██╗   ██╗██╗  ██╗██╗${NC}"
     echo -e "${C2}████╗ ████║██║   ██║╚██╗██╔╝██║${NC}"
     echo -e "${C3}██╔████╔██║██║   ██║ ╚███╔╝ ██║${NC}"
@@ -96,10 +97,11 @@ print_banner() {
     echo -e "${C5}██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗██║${NC}"
     echo -e "${C6}╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝${NC}"
     echo ""
-    echo "Welcome to MUXI installer ${INSTALLER_VERSION} (Apache-2.0 ${ARCH})"
+    echo -e "\033[1mWelcome to MUXI installer ${INSTALLER_VERSION} (Apache-2.0 ${ARCH})${NC}"
     echo ""
     echo " * Documentation:  https://muxi.org/docs"
     echo " * Support:        https://muxi.org/support"
+    echo ""
 }
 
 # Parse arguments
