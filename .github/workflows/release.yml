@@ -32,11 +32,11 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           
-          # Update version in install.sh
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" install.sh
+          # Update INSTALLER_VERSION constant in install.sh (telemetry references this)
+          sed -i "s/INSTALLER_VERSION=\"[^\"]*\"/INSTALLER_VERSION=\"$VERSION\"/" install.sh
           
-          # Update version in install.ps1
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" install.ps1
+          # Update version in install.ps1 telemetry
+          sed -i "s/version = \"[^\"]*\"/version = \"$VERSION\"/" install.ps1
           
           # Update .version file
           echo "$VERSION" > .version

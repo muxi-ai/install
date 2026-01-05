@@ -14,6 +14,9 @@ set -e
 # Telemetry endpoint
 TELEMETRY_URL="https://capture.muxi.org"
 
+# Installer version (updated by release workflow)
+INSTALLER_VERSION="0.20260105.0"
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -22,6 +25,14 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 GOLD='\033[38;2;201;139;69m'  # Brand color #c98b45
 NC='\033[0m'
+
+# Banner gradient colors
+C1='\033[38;2;230;169;69m'   # #e6a945
+C2='\033[38;2;230;154;59m'   # #e69a3b
+C3='\033[38;2;230;143;54m'   # #e68f36
+C4='\033[38;2;230;133;49m'   # #e68531
+C5='\033[38;2;224;125;45m'   # #e07d2d
+C6='\033[38;2;191;120;64m'   # #bf7840
 
 # Symbols
 CHECK="${GREEN}✓${NC}"
@@ -76,15 +87,20 @@ is_headless() {
     return 1
 }
 
-# Banner
-BANNER="${GOLD}
-███╗   ███╗██╗   ██╗██╗  ██╗██╗
-████╗ ████║██║   ██║╚██╗██╔╝██║
-██╔████╔██║██║   ██║ ╚███╔╝ ██║
-██║╚██╔╝██║██║   ██║ ██╔██╗ ██║
-██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗██║
-╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝
-${NC}"
+# Banner (gradient colors, version shown after arch detection)
+print_banner() {
+    echo -e "${C1}███╗   ███╗██╗   ██╗██╗  ██╗██╗${NC}"
+    echo -e "${C2}████╗ ████║██║   ██║╚██╗██╔╝██║${NC}"
+    echo -e "${C3}██╔████╔██║██║   ██║ ╚███╔╝ ██║${NC}"
+    echo -e "${C4}██║╚██╔╝██║██║   ██║ ██╔██╗ ██║${NC}"
+    echo -e "${C5}██║ ╚═╝ ██║╚██████╔╝██╔╝ ██╗██║${NC}"
+    echo -e "${C6}╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝${NC}"
+    echo ""
+    echo "Welcome to MUXI installer ${INSTALLER_VERSION} (Apache-2.0 ${ARCH})"
+    echo ""
+    echo " * Documentation:  https://muxi.org/docs"
+    echo " * Support:        https://muxi.org/support"
+}
 
 # Parse arguments
 NON_INTERACTIVE=0
@@ -275,7 +291,7 @@ send_telemetry() {
   "ts": "$INSTALL_TS",
   "country": "$GEO_COUNTRY",
   "payload": {
-    "version": "0.20260105.0",
+    "version": "$INSTALLER_VERSION",
     "install_method": "$install_method",
     "os": "$OS",
     "arch": "$ARCH",
@@ -370,8 +386,7 @@ fi
 
 # Show banner (interactive only)
 if [ "$NON_INTERACTIVE" = "0" ]; then
-    echo -e "$BANNER"
-    echo "Welcome to MUXI installer!"
+    print_banner
     echo ""
     
     # Component selection with radio buttons
