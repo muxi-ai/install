@@ -9,10 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Skip if commit is a release (prevent infinite loop)
+    if: "!startsWith(github.event.head_commit.message, 'chore: release')"
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.MUXI_RELEASE_TOKEN }}
       
       - name: Calculate version
         id: version
@@ -86,3 +89,5 @@ jobs:
           git checkout develop
           git merge origin/main --no-ff -m "chore: merge main back to develop (v${{ steps.version.outputs.version }})"
           git push origin develop
+        env:
+          GITHUB_TOKEN: ${{ secrets.MUXI_RELEASE_TOKEN }}
