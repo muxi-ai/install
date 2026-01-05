@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Shellcheck
+        run: shellcheck install.sh
+      
+      - name: Dry run test
+        run: bash install.sh --skip-download --non-interactive --dry-run

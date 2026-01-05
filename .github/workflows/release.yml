@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Calculate version
+        id: version
+        run: |
+          DATE=$(date +%Y%m%d)
+          LATEST=$(git tag -l "v0.${DATE}.*" | sort -V | tail -n1)
+          if [ -z "$LATEST" ]; then
+            VERSION="0.${DATE}.0"
+          else
+            PATCH=$(echo $LATEST | cut -d. -f3)
+            VERSION="0.${DATE}.$((PATCH + 1))"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+      
+      - name: Update version in scripts
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          # Update version in install.sh
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" install.sh
+          
+          # Update version in install.ps1
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" install.ps1
+          
+          # Update .version file
+          echo "$VERSION" > .version
+      
+      - name: Commit and tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: release v${VERSION}" || echo "No changes to commit"
+          git tag "v${VERSION}"
+          git push origin main
+          git push origin "v${VERSION}"
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v${{ steps.version.outputs.version }}"
+          name: "v${{ steps.version.outputs.version }}"
+          body: |
+            ## MUXI Installer v${{ steps.version.outputs.version }}
+            
+            ### Installation
+            
+            **macOS / Linux:**
+            ```bash
+            curl -fsSL https://muxi.org/install | bash
+            ```
+            
+            **Windows:**
+            ```powershell
+            irm https://muxi.org/install | iex
+            ```
+            
+            **Homebrew:**
+            ```bash
+            brew install muxi-ai/tap/muxi
+            ```
+          files: |
+            install.sh
+            install.ps1
+      
+      - name: Merge back to develop
+        run: |
+          git fetch origin develop
+          git checkout develop
+          git merge origin/main --no-ff -m "chore: merge main back to develop (v${{ steps.version.outputs.version }})"
+          git push origin develop

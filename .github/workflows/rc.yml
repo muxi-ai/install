@@ -1,0 +1,23 @@
+name: Release Candidate
+
+on:
+  push:
+    branches: [rc]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Shellcheck
+        run: shellcheck install.sh
+      
+      - name: Syntax check PowerShell
+        shell: pwsh
+        run: |
+          $null = [System.Management.Automation.Language.Parser]::ParseFile('install.ps1', [ref]$null, [ref]$null)
+          Write-Host "PowerShell syntax OK"
+      
+      - name: Dry run test (bash)
+        run: bash install.sh --skip-download --non-interactive --dry-run

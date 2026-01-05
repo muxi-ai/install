@@ -275,7 +275,7 @@ send_telemetry() {
   "ts": "$INSTALL_TS",
   "country": "$GEO_COUNTRY",
   "payload": {
-    "version": "0.1.0",
+    "version": "0.20260105.0",
     "install_method": "$install_method",
     "os": "$OS",
     "arch": "$ARCH",
