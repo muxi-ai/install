@@ -15,7 +15,7 @@ set -e
 TELEMETRY_URL="https://capture.muxi.org"
 
 # Installer version (updated by release workflow)
-INSTALLER_VERSION="0.20260105.0"
+INSTALLER_VERSION="0.20260105.1"
 
 # Colors
 RED='\033[0;31m'
