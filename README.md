@@ -1,122 +1,56 @@
 # MUXI Installer
 
-Official installation scripts for MUXI Server and CLI.
+Official installation scripts for [MUXI](https://github.com/muxi-ai/muxi) -- open-source infrastructure for running AI agents in production.
 
-## Quick Install
-
-### macOS (Homebrew)
+## Install
 
 ```bash
+# macOS (Homebrew)
 brew install muxi-ai/tap/muxi
-```
 
-### macOS / Linux
-
-```bash
+# macOS / Linux
 curl -fsSL https://muxi.org/install | bash
-```
 
-### Linux (Production)
-
-```bash
+# Linux (system-wide)
 curl -fsSL https://muxi.org/install | sudo bash
-```
 
-### Windows
-
-```powershell
+# Windows (PowerShell)
 irm https://muxi.org/install | iex
 ```
 
-## What Gets Installed
-
-| Binary | Description |
-|--------|-------------|
-| `muxi-server` | Production infrastructure for running AI agents |
-| `muxi` | CLI for managing formations and deployments |
-
-### Install Locations
-
-| Method | Binaries | Config |
-|--------|----------|--------|
-| Homebrew | `/opt/homebrew/bin` | `~/.muxi/` |
-| curl (user) | `~/.local/bin` | `~/.muxi/` |
-| curl (sudo) | `/usr/local/bin` | `/etc/muxi/` |
-| Windows | `%LOCALAPPDATA%\MUXI\bin` | `%USERPROFILE%\.muxi\` |
-
-## Installation Options
-
-### Flags
+### Options
 
 | Flag | Description |
 |------|-------------|
 | `--non-interactive` | Skip prompts, use defaults |
 | `--cli-only` | Install CLI only (no server) |
-| `--dry-run` | Download but don't install (testing) |
+| `--dry-run` | Download but don't install |
 
-### Examples
+## What Gets Installed
 
-```bash
-# Interactive install (default: Server + CLI)
-curl -fsSL https://muxi.org/install | bash
+| Binary | Description |
+|--------|-------------|
+| `muxi-server` | Orchestration server for AI agent formations |
+| `muxi` | CLI for managing formations and deployments |
 
-# Non-interactive (for scripts/CI)
-curl -fsSL https://muxi.org/install | bash -s -- --non-interactive
-
-# CLI only
-curl -fsSL https://muxi.org/install | bash -s -- --cli-only
-```
-
-## After Installation
-
-### Server + CLI
+## Next Steps
 
 ```bash
-# Initialize the server
-muxi-server init
-
-# Start the server
-muxi-server start
+muxi-server init    # Generate credentials
+muxi-server start   # Start the server
 ```
-
-### CLI Only
-
-```bash
-# Connect to a server
-muxi profiles add
-
-# Create a formation
-muxi new formation
-
-# Or start with a demo
-muxi pull @muxi/quickstart
-```
-
-## Telemetry
-
-The installer collects anonymous usage data to help improve MUXI:
-- OS and architecture
-- Install success/failure
-- Duration
-
-**No personal data is collected.** Opt-out:
-
-```bash
-MUXI_TELEMETRY=0 curl -fsSL https://muxi.org/install | bash
-```
-
-Or set `telemetry: false` in `~/.muxi/config.yaml`.
 
 ## Documentation
 
-- [INSTALLER.md](INSTALLER.md) - Detailed design decisions
-- [muxi.org/docs](https://muxi.org/docs) - Full documentation
+- [muxi.org/docs/installation](https://muxi.org/docs/installation) -- Full installation guide
+- [muxi.org/docs/quickstart](https://muxi.org/docs/quickstart) -- Getting started
+- [DESIGN.md](DESIGN.md) -- Installer internals and design decisions
 
-## Related Repositories
+## Related
 
-- [muxi-ai/server](https://github.com/muxi-ai/server) - MUXI Server
-- [muxi-ai/cli](https://github.com/muxi-ai/cli) - MUXI CLI
-- [muxi-ai/homebrew-tap](https://github.com/muxi-ai/homebrew-tap) - Homebrew formulae
+- [muxi-ai/server](https://github.com/muxi-ai/server) -- MUXI Server
+- [muxi-ai/cli](https://github.com/muxi-ai/cli) -- MUXI CLI
+- [muxi-ai/homebrew-tap](https://github.com/muxi-ai/homebrew-tap) -- Homebrew formula
 
 ## License
 
