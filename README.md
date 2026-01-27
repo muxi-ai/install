@@ -2,6 +2,14 @@
 
 Official installation scripts for [MUXI](https://github.com/muxi-ai/muxi) -- open-source infrastructure for running AI agents in production.
 
+> [!IMPORTANT]
+> ## MUXI Ecosystem
+>
+> This repository is part of the larger MUXI ecosystem.
+>
+> **📋 Complete architectural overview:** See [muxi/ARCHITECTURE.md](https://github.com/muxi-ai/muxi/blob/main/ARCHITECTURE.md) - explains how all 9 repositories fit together, dependencies, status, and roadmap.
+
+
 ## Install
 
 ```bash
