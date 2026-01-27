@@ -1,18 +1,30 @@
+# MUXI Installer Release Workflow
+#
+# STEP ORDER:
+#   1. Calculate version
+#   2. Update version in scripts, commit + push to main
+#   3. Create + push git tag
+#   4. Create GitHub Release with install scripts
+#   5. Merge main back to develop
+#
+# Tag is pushed AFTER version commit but BEFORE GitHub Release.
+#
 name: Release
 
 on:
   push:
     branches: [main]
 
+permissions: {}
+
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # Skip if commit is a release (prevent infinite loop)
     if: "!startsWith(github.event.head_commit.message, 'chore: release')"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           token: ${{ secrets.MUXI_RELEASE_TOKEN }}
@@ -29,34 +41,35 @@ jobs:
             VERSION="0.${DATE}.$((PATCH + 1))"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Releasing version: $VERSION"
       
       - name: Update version in scripts
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          
-          # Update INSTALLER_VERSION constant in install.sh (telemetry references this)
           sed -i "s/INSTALLER_VERSION=\"[^\"]*\"/INSTALLER_VERSION=\"$VERSION\"/" install.sh
-          
-          # Update version in install.ps1 telemetry
           sed -i "s/version = \"[^\"]*\"/version = \"$VERSION\"/" install.ps1
-          
-          # Update .version file
           echo "$VERSION" > .version
       
-      - name: Commit and tag
+      - name: Commit version bump
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "chore: release v${VERSION}" || echo "No changes to commit"
-          git tag "v${VERSION}"
           git push origin main
-          git push origin "v${VERSION}"
+      
+      - name: Create and push git tag
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
       
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
         with:
           tag_name: "v${{ steps.version.outputs.version }}"
           name: "v${{ steps.version.outputs.version }}"
@@ -87,7 +100,7 @@ jobs:
         run: |
           git fetch origin develop
           git checkout develop
-          git merge origin/main --no-ff -m "chore: merge main back to develop (v${{ steps.version.outputs.version }})"
+          git merge origin/main --no-ff -m "chore: merge main back to develop (v${{ steps.version.outputs.version }}) [skip ci]"
           git push origin develop
         env:
           GITHUB_TOKEN: ${{ secrets.MUXI_RELEASE_TOKEN }}
