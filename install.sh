@@ -128,8 +128,13 @@ for arg in "$@"; do
 done
 
 # Auto-detect interactive mode
+# Handle curl | bash by reopening stdin from /dev/tty if available
 if [ "$NON_INTERACTIVE" = "0" ] && [ ! -t 0 ]; then
-    NON_INTERACTIVE=1
+    if [ -e /dev/tty ]; then
+        exec < /dev/tty
+    else
+        NON_INTERACTIVE=1
+    fi
 fi
 
 # Detect platform
