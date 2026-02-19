@@ -4,10 +4,13 @@
 # https://muxi.org/install
 #
 # Usage:
-#   Interactive:       curl -sSL https://muxi.org/install | sudo bash
-#   Non-interactive:   curl -sSL https://muxi.org/install | sudo bash -s --non-interactive
-#   CLI only:          curl -sSL https://muxi.org/install | sudo bash -s --cli-only
+#   Interactive:       curl -sSL https://muxi.org/install | bash
+#   Non-interactive:   curl -sSL https://muxi.org/install | bash -s -- --non-interactive
+#   CLI only:          curl -sSL https://muxi.org/install | bash -s -- --cli-only
 #
+
+# Wrap in main() to ensure full download before execution (curl | bash safety)
+main() {
 
 set -e
 
@@ -656,3 +659,8 @@ fi
 
 echo "Docs: https://muxi.org/docs"
 echo ""
+
+}
+
+# Run main (ensures script is fully downloaded before execution)
+main "$@"
