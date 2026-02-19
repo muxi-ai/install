@@ -131,13 +131,16 @@ for arg in "$@"; do
 done
 
 # Auto-detect interactive mode
-# Handle curl | bash by reopening stdin from /dev/tty if available
+# For curl | bash, check if /dev/tty is available for user input
 if [ "$NON_INTERACTIVE" = "0" ] && [ ! -t 0 ]; then
     if [ -e /dev/tty ]; then
-        exec < /dev/tty
+        # /dev/tty available - will redirect reads individually
+        TTY_INPUT="/dev/tty"
     else
         NON_INTERACTIVE=1
     fi
+else
+    TTY_INPUT="/dev/stdin"
 fi
 
 # Detect platform
@@ -421,13 +424,13 @@ if [ "$NON_INTERACTIVE" = "0" ]; then
     
     draw_menu
     while true; do
-        read -rsn1 key
+        read -rsn1 key < "$TTY_INPUT"
         case "$key" in
             1) selected=1; draw_menu ;;
             2) selected=2; draw_menu ;;
             "") break ;;  # Enter key
             $'\x1b')  # Arrow keys
-                read -rsn2 arrow
+                read -rsn2 arrow < "$TTY_INPUT"
                 case "$arrow" in
                     '[A'|'[B') 
                         [ "$selected" = "1" ] && selected=2 || selected=1
@@ -584,7 +587,7 @@ if [ "$NON_INTERACTIVE" = "0" ]; then
     echo "Get security alerts, release notes, and early access to new features."
     echo "(low volume, unsubscribe anytime)"
     echo ""
-    read -ep "Email [Enter to skip]: " USER_EMAIL
+    read -rp "Email [Enter to skip]: " USER_EMAIL < "$TTY_INPUT"
     
     # Replace prompt line with clean output
     printf "\033[1A\033[K"  # Move up and clear line
@@ -615,7 +618,7 @@ if [ "$NON_INTERACTIVE" = "0" ] && ! is_headless; then
         MODE="cli"
     fi
     echo ""
-    read -p "  Show the guide? [Y/n]: " OPEN_VIDEO
+    read -rp "  Show the guide? [Y/n]: " OPEN_VIDEO < "$TTY_INPUT"
     if [ -z "$OPEN_VIDEO" ] || [ "$OPEN_VIDEO" = "y" ] || [ "$OPEN_VIDEO" = "Y" ]; then
         URL="https://muxi.org/post-install?mode=${MODE}&ic=${MACHINE_ID}"
         case "$OS" in
