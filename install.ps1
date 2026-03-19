@@ -225,6 +225,25 @@ function Send-Optin {
     } -ArgumentList "$TelemetryUrl/v1/optin/", $payload | Out-Null
 }
 
+# Write a key-value pair to config.yaml (create/update)
+function Set-ConfigValue {
+    param($Key, $Value)
+
+    New-Item -ItemType Directory -Force -Path $MuxiDir | Out-Null
+
+    if (Test-Path $ConfigFile) {
+        $content = Get-Content $ConfigFile -Raw
+        if ($content -match "(?m)^${Key}:") {
+            $content = $content -replace "(?m)^${Key}:.*", "${Key}: ${Value}"
+            Set-Content $ConfigFile $content -NoNewline
+        } else {
+            Add-Content $ConfigFile "${Key}: ${Value}"
+        }
+    } else {
+        Set-Content $ConfigFile "${Key}: ${Value}"
+    }
+}
+
 # Get latest version from GitHub
 function Get-LatestVersion {
     param($Repo)
