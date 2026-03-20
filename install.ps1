@@ -13,13 +13,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# ESC character (compatible with PowerShell 5.x+)
+$ESC = [char]27
+
 # Colors (gold brand color #c98b45)
-$Gold = "`e[38;2;201;139;69m"
-$Green = "`e[32m"
-$Blue = "`e[34m"
-$Cyan = "`e[36m"
-$Red = "`e[31m"
-$Reset = "`e[0m"
+$Gold = "${ESC}[38;2;201;139;69m"
+$Green = "${ESC}[32m"
+$Blue = "${ESC}[34m"
+$Cyan = "${ESC}[36m"
+$Red = "${ESC}[31m"
+$Reset = "${ESC}[0m"
 
 # Symbols
 $Check = "${Green}✓${Reset}"
@@ -244,19 +247,15 @@ function Set-ConfigValue {
     }
 }
 
-# Get latest version from GitHub
+# Get latest version from GitHub via API
 function Get-LatestVersion {
     param($Repo)
     try {
-        $response = Invoke-WebRequest -Uri "https://github.com/$Repo/releases/latest" -MaximumRedirection 0 -ErrorAction SilentlyContinue
-    } catch {
-        if ($_.Exception.Response.Headers.Location) {
-            $location = $_.Exception.Response.Headers.Location.ToString()
-            if ($location -match "/tag/(.+)$") {
-                return $matches[1]
-            }
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -UseBasicParsing
+        if ($release.tag_name) {
+            return $release.tag_name
         }
-    }
+    } catch {}
     return "v0.1.0"
 }
 
