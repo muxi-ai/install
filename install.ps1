@@ -322,7 +322,7 @@ if ($SkipDownload) {
     if ($InstallServer) {
         $ServerVersion = Get-LatestVersion "muxi-ai/server"
         $binaryName = "muxi-server-windows-${Arch}.exe"
-        $downloadUrl = "https://github.com/muxi-ai/server/releases/download/$ServerVersion/$binaryName"
+        $downloadUrl = "https://releases.muxi.org/server/releases/download/$ServerVersion/$binaryName"
         $targetPath = "$InstallDir\muxi-server.exe"
         
         Write-Host "${Blue}⠋${Reset} Downloading MUXI Server..." -NoNewline
@@ -342,7 +342,7 @@ if ($SkipDownload) {
     if ($InstallCli) {
         $CliVersion = Get-LatestVersion "muxi-ai/cli"
         $binaryName = "muxi-windows-${Arch}.exe"
-        $downloadUrl = "https://github.com/muxi-ai/cli/releases/download/$CliVersion/$binaryName"
+        $downloadUrl = "https://releases.muxi.org/cli/releases/download/$CliVersion/$binaryName"
         $targetPath = "$InstallDir\muxi.exe"
         
         Write-Host "${Blue}⠋${Reset} Downloading MUXI CLI..." -NoNewline

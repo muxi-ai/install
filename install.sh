@@ -482,7 +482,7 @@ if [ "$INSTALL_SERVER" = "1" ]; then
         
         # Get version from releases/latest redirect
         SERVER_VERSION=$(curl -sI "https://github.com/muxi-ai/server/releases/latest" | grep -i location | sed 's|.*/tag/||' | tr -d '\r\n')
-        DOWNLOAD_URL="https://github.com/muxi-ai/server/releases/download/${SERVER_VERSION}/${BINARY_NAME}"
+        DOWNLOAD_URL="https://releases.muxi.org/server/releases/download/${SERVER_VERSION}/${BINARY_NAME}"
         
         printf "${BLUE}⠋${NC} Downloading MUXI Server..."
         if ! curl -fsSL -o "$TMP_DIR/muxi-server" "$DOWNLOAD_URL" 2>/dev/null; then
@@ -514,7 +514,7 @@ if [ "$INSTALL_CLI" = "1" ]; then
         
         # Get version from releases/latest redirect
         CLI_VERSION=$(curl -sI "https://github.com/muxi-ai/cli/releases/latest" | grep -i location | sed 's|.*/tag/||' | tr -d '\r\n')
-        DOWNLOAD_URL="https://github.com/muxi-ai/cli/releases/download/${CLI_VERSION}/${BINARY_NAME}"
+        DOWNLOAD_URL="https://releases.muxi.org/cli/releases/download/${CLI_VERSION}/${BINARY_NAME}"
         
         printf "${BLUE}⠋${NC} Downloading MUXI CLI..."
         if ! curl -fsSL -o "$TMP_DIR/muxi" "$DOWNLOAD_URL" 2>/dev/null; then
