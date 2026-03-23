@@ -185,7 +185,7 @@ function Send-Telemetry {
         ts = $ts
         country = $script:GeoCountry
         payload = @{
-            version = "0.20260320.0"
+            version = "0.20260323.0"
             install_method = "powershell"
             os = "windows"
             arch = $Arch
