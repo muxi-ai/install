@@ -51,25 +51,25 @@ spin() {
     shift
     local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
     local i=0
-    
+
     # Run command in background
     "$@" &
     local pid=$!
-    
+
     # Show spinner while command runs
     while kill -0 $pid 2>/dev/null; do
         printf "\r${BLUE}%s${NC} %s" "${frames[$i]}" "$msg"
         i=$(( (i + 1) % 10 ))
         sleep 0.1
     done
-    
+
     # Wait for command and get exit code
     wait $pid
     local exit_code=$?
-    
+
     # Clear the spinner line
     printf "\r\033[K"
-    
+
     return $exit_code
 }
 
@@ -77,16 +77,16 @@ spin() {
 is_headless() {
     # SSH session
     [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ] && return 0
-    
+
     # No display (Linux)
     [ "$OS" = "linux" ] && [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ] && return 0
-    
+
     # Docker/container
     [ -f "/.dockerenv" ] && return 0
-    
+
     # CI environments
     [ -n "$CI" ] && return 0
-    
+
     return 1
 }
 
@@ -189,7 +189,7 @@ read_config() {
 # Get OS-level machine identifier (deterministic)
 get_os_machine_id() {
     local raw_id=""
-    
+
     case "$OS" in
         darwin)
             # macOS: Hardware UUID
@@ -204,7 +204,7 @@ get_os_machine_id() {
             fi
             ;;
     esac
-    
+
     echo "$raw_id"
 }
 
@@ -212,14 +212,14 @@ get_os_machine_id() {
 # Algorithm: sha256(os_machine_id + "muxi") -> format as UUID
 generate_machine_id() {
     mkdir -p "$MUXI_DIR"
-    
+
     # Check if already in config
     local mid=$(read_config "machine_id")
     if [ -n "$mid" ]; then
         echo "$mid"
         return
     fi
-    
+
     # Get OS machine ID and hash it
     local os_id=$(get_os_machine_id)
     if [ -n "$os_id" ]; then
@@ -235,7 +235,7 @@ generate_machine_id() {
             mid=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "$(date +%s)-$$-$RANDOM")
         fi
     fi
-    
+
     # Initialize config with machine_id and telemetry
     cat > "$CONFIG_FILE" << EOF
 machine_id: $mid
@@ -248,7 +248,7 @@ EOF
 get_geo() {
     local geo_file="$MUXI_DIR/geo.json"
     local now=$(date +%s)
-    
+
     # Check cache (24h) - only if it looks like valid JSON
     if [ -f "$geo_file" ]; then
         if grep -q '"ip"' "$geo_file" 2>/dev/null; then
@@ -262,10 +262,10 @@ get_geo() {
             rm -f "$geo_file"
         fi
     fi
-    
+
     # Fetch fresh - try ip-api.com as fallback (no Cloudflare)
     local geo=$(curl -s --max-time 2 "http://ip-api.com/json/" 2>/dev/null || echo "{}")
-    
+
     # Validate response contains expected fields
     if echo "$geo" | grep -q '"query"' 2>/dev/null; then
         # ip-api.com uses "query" for IP and "countryCode" for country
@@ -285,18 +285,18 @@ send_telemetry() {
     local success=$1
     local duration_ms=$2
     local install_method=$3
-    
+
     # Check opt-out (env var or config)
     if [ "$MUXI_TELEMETRY" = "0" ] || [ "$(read_config telemetry)" = "false" ]; then
         return
     fi
-    
+
     # Convert to JSON booleans
     local server_json="false"
     local cli_json="false"
     [ "$INSTALL_SERVER" = "1" ] && server_json="true"
     [ "$INSTALL_CLI" = "1" ] && cli_json="true"
-    
+
     local payload=$(cat <<EOF
 {
   "module": "install",
@@ -316,7 +316,7 @@ send_telemetry() {
 }
 EOF
 )
-    
+
     # Fire and forget (disown to survive script exit)
     (curl -sL -X POST "$TELEMETRY_URL/v1/telemetry/" \
         -H "Content-Type: application/json" \
@@ -326,15 +326,15 @@ EOF
 # Send optin
 send_optin() {
     local email=$1
-    
+
     local geo=$(get_geo)
     local ip=$(echo "$geo" | grep -o '"ip":"[^"]*"' | cut -d'"' -f4)
     local country=$(echo "$geo" | grep -o '"country_code":"[^"]*"' | cut -d'"' -f4)
-    
+
     # Determine install type
     local installed="cli"
     [ "$INSTALL_SERVER" = "1" ] && installed="all"
-    
+
     local payload=$(cat <<EOF
 {
   "email": "$email",
@@ -345,7 +345,7 @@ send_optin() {
 }
 EOF
 )
-    
+
     # Fire and forget (subshell survives script exit)
     (curl -sL -X POST "$TELEMETRY_URL/v1/optin/" \
         -H "Content-Type: application/json" \
@@ -356,9 +356,9 @@ EOF
 write_config() {
     local key=$1
     local value=$2
-    
+
     mkdir -p "$MUXI_DIR"
-    
+
     if [ -f "$CONFIG_FILE" ]; then
         # Update existing key or append
         if grep -q "^$key:" "$CONFIG_FILE" 2>/dev/null; then
@@ -401,17 +401,17 @@ fi
 if [ "$NON_INTERACTIVE" = "0" ]; then
     print_banner
     echo ""
-    
+
     # Component selection with radio buttons
     selected=1
     first_draw=0
-    
+
     draw_menu() {
         if [ "$first_draw" = "1" ]; then
             printf "\033[3A\033[J"
         fi
         first_draw=1
-        
+
         echo -e "${ARROW} What would you like to install?"
         if [ "$selected" = "1" ]; then
             echo -e "  ${GOLD}◉ Server + CLI (recommended)${NC}"
@@ -421,7 +421,7 @@ if [ "$NON_INTERACTIVE" = "0" ]; then
             echo -e "  ${GOLD}◉ CLI only${NC}"
         fi
     }
-    
+
     draw_menu
     while true; do
         read -rsn1 key < "$TTY_INPUT"
@@ -432,7 +432,7 @@ if [ "$NON_INTERACTIVE" = "0" ]; then
             $'\x1b')  # Arrow keys
                 read -rsn2 arrow < "$TTY_INPUT"
                 case "$arrow" in
-                    '[A'|'[B') 
+                    '[A'|'[B')
                         [ "$selected" = "1" ] && selected=2 || selected=1
                         draw_menu
                         ;;
@@ -441,7 +441,7 @@ if [ "$NON_INTERACTIVE" = "0" ]; then
         esac
     done
     echo ""
-    
+
     case "$selected" in
         2)
             INSTALL_SERVER=0
@@ -479,11 +479,11 @@ if [ "$INSTALL_SERVER" = "1" ]; then
         echo -e "${CHECK} Downloaded MUXI Server v0.0.0 (skipped)"
     else
         BINARY_NAME="muxi-server-${OS}-${ARCH}"
-        
+
         # Get version from releases/latest redirect
         SERVER_VERSION=$(curl -sI "https://github.com/muxi-ai/server/releases/latest" | grep -i location | sed 's|.*/tag/||' | tr -d '\r\n')
-        DOWNLOAD_URL="https://releases.muxi.org/server/releases/download/${SERVER_VERSION}/${BINARY_NAME}"
-        
+        DOWNLOAD_URL="https://pkg.muxi.org/server/${SERVER_VERSION}/${BINARY_NAME}"
+
         printf "${BLUE}⠋${NC} Downloading MUXI Server..."
         if ! curl -fsSL -o "$TMP_DIR/muxi-server" "$DOWNLOAD_URL" 2>/dev/null; then
             printf "\r\033[K"
@@ -493,7 +493,7 @@ if [ "$INSTALL_SERVER" = "1" ]; then
             send_telemetry false $DURATION_MS "curl"
             exit 1
         fi
-        
+
         printf "\r\033[K"
         chmod +x "$TMP_DIR/muxi-server"
         if [ "$DRY_RUN" = "0" ]; then
@@ -511,11 +511,11 @@ if [ "$INSTALL_CLI" = "1" ]; then
         echo -e "${CHECK} Downloaded MUXI CLI v0.0.0 (skipped)"
     else
         BINARY_NAME="muxi-${OS}-${ARCH}"
-        
+
         # Get version from releases/latest redirect
         CLI_VERSION=$(curl -sI "https://github.com/muxi-ai/cli/releases/latest" | grep -i location | sed 's|.*/tag/||' | tr -d '\r\n')
-        DOWNLOAD_URL="https://releases.muxi.org/cli/releases/download/${CLI_VERSION}/${BINARY_NAME}"
-        
+        DOWNLOAD_URL="https://pkg.muxi.org/cli/${CLI_VERSION}/${BINARY_NAME}"
+
         printf "${BLUE}⠋${NC} Downloading MUXI CLI..."
         if ! curl -fsSL -o "$TMP_DIR/muxi" "$DOWNLOAD_URL" 2>/dev/null; then
             printf "\r\033[K"
@@ -525,7 +525,7 @@ if [ "$INSTALL_CLI" = "1" ]; then
             send_telemetry false $DURATION_MS "curl"
             exit 1
         fi
-        
+
         printf "\r\033[K"
         chmod +x "$TMP_DIR/muxi"
         if [ "$DRY_RUN" = "0" ]; then
@@ -564,7 +564,7 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         fish) SHELL_CONFIG="$HOME/.config/fish/config.fish" ;;
         *)    SHELL_CONFIG="" ;;
     esac
-    
+
     if [ -n "$SHELL_CONFIG" ]; then
         echo "" >> "$SHELL_CONFIG"
         echo "# Added by MUXI installer" >> "$SHELL_CONFIG"
@@ -588,7 +588,7 @@ if [ "$NON_INTERACTIVE" = "0" ]; then
     echo "(low volume, unsubscribe anytime)"
     echo ""
     read -rp "Email [Enter to skip]: " USER_EMAIL < "$TTY_INPUT"
-    
+
     # Replace prompt line with clean output
     printf "\033[1A\033[K"  # Move up and clear line
     if [ -n "$USER_EMAIL" ]; then

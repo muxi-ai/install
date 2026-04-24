@@ -39,7 +39,7 @@ MUXI Installer - Windows
 
 USAGE:
     irm https://muxi.org/install | iex
-    
+
 OPTIONS:
     -NonInteractive   Skip prompts, use defaults
     -CliOnly          Install CLI only (no server)
@@ -50,7 +50,7 @@ OPTIONS:
 EXAMPLES:
     # Interactive install
     irm https://muxi.org/install | iex
-    
+
     # CLI only
     irm https://muxi.org/install | iex -CliOnly
 "@
@@ -84,16 +84,16 @@ $Arch = if ([Environment]::Is64BitOperatingSystem) {
 function Test-Headless {
     # SSH session
     if ($env:SSH_CLIENT -or $env:SSH_TTY) { return $true }
-    
+
     # CI environments
     if ($env:CI) { return $true }
-    
+
     # Windows Server Core (no GUI)
     try {
         $gui = Get-WindowsFeature -Name "Server-Gui-Shell" -ErrorAction SilentlyContinue
         if ($gui -and -not $gui.Installed) { return $true }
     } catch {}
-    
+
     return $false
 }
 
@@ -116,7 +116,7 @@ function Get-MachineId {
             return $matches[1].Trim()
         }
     }
-    
+
     # Generate from OS machine ID
     $osId = Get-OSMachineId
     if ($osId) {
@@ -128,14 +128,14 @@ function Get-MachineId {
         # Fallback to random GUID
         $machineId = [guid]::NewGuid().ToString()
     }
-    
+
     # Create config
     New-Item -ItemType Directory -Force -Path $MuxiDir | Out-Null
     @"
 machine_id: $machineId
 telemetry: true
 "@ | Set-Content $ConfigFile
-    
+
     return $machineId
 }
 
@@ -143,7 +143,7 @@ telemetry: true
 function Get-GeoInfo {
     $geoFile = "$MuxiDir\geo.json"
     $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-    
+
     # Check cache (24h)
     if (Test-Path $geoFile) {
         try {
@@ -153,7 +153,7 @@ function Get-GeoInfo {
             }
         } catch {}
     }
-    
+
     # Fetch fresh
     try {
         $response = Invoke-RestMethod -Uri "http://ip-api.com/json/" -TimeoutSec 2
@@ -173,12 +173,12 @@ function Get-GeoInfo {
 # Send telemetry (async)
 function Send-Telemetry {
     param($Success, $DurationMs, $InstallServer, $InstallCli)
-    
+
     # Check opt-out
     if ($env:MUXI_TELEMETRY -eq "0") { return }
-    
+
     $ts = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-    
+
     $payload = @{
         module = "install"
         machine_id = $script:MachineId
@@ -195,7 +195,7 @@ function Send-Telemetry {
             duration_ms = $DurationMs
         }
     } | ConvertTo-Json -Depth 3
-    
+
     # Fire and forget
     Start-Job -ScriptBlock {
         param($url, $body)
@@ -208,10 +208,10 @@ function Send-Telemetry {
 # Send optin (async)
 function Send-Optin {
     param($Email, $InstallServer)
-    
+
     $geo = Get-GeoInfo
     $installed = if ($InstallServer) { "all" } else { "cli" }
-    
+
     $payload = @{
         email = $Email
         machine_id = $script:MachineId
@@ -219,7 +219,7 @@ function Send-Optin {
         country = $geo.country_code
         installed = $installed
     } | ConvertTo-Json
-    
+
     Start-Job -ScriptBlock {
         param($url, $body)
         try {
@@ -282,7 +282,7 @@ if (-not $NonInteractive) {
     Write-Host $Banner
     Write-Host "Welcome to MUXI installer!"
     Write-Host ""
-    
+
     # Interactive component selection
     if (-not $CliOnly) {
         Write-Host "${Arrow} What would you like to install?"
@@ -322,9 +322,9 @@ if ($SkipDownload) {
     if ($InstallServer) {
         $ServerVersion = Get-LatestVersion "muxi-ai/server"
         $binaryName = "muxi-server-windows-${Arch}.exe"
-        $downloadUrl = "https://releases.muxi.org/server/releases/download/$ServerVersion/$binaryName"
+        $downloadUrl = "https://pkg.muxi.org/server/$ServerVersion/$binaryName"
         $targetPath = "$InstallDir\muxi-server.exe"
-        
+
         Write-Host "${Blue}⠋${Reset} Downloading MUXI Server..." -NoNewline
         try {
             Invoke-WebRequest -Uri $downloadUrl -OutFile $targetPath -UseBasicParsing
@@ -337,14 +337,14 @@ if ($SkipDownload) {
             exit 1
         }
     }
-    
+
     # Install CLI
     if ($InstallCli) {
         $CliVersion = Get-LatestVersion "muxi-ai/cli"
         $binaryName = "muxi-windows-${Arch}.exe"
-        $downloadUrl = "https://releases.muxi.org/cli/releases/download/$CliVersion/$binaryName"
+        $downloadUrl = "https://pkg.muxi.org/cli/$CliVersion/$binaryName"
         $targetPath = "$InstallDir\muxi.exe"
-        
+
         Write-Host "${Blue}⠋${Reset} Downloading MUXI CLI..." -NoNewline
         try {
             Invoke-WebRequest -Uri $downloadUrl -OutFile $targetPath -UseBasicParsing
@@ -389,15 +389,15 @@ if (-not $NonInteractive) {
     Write-Host "(low volume, unsubscribe anytime)"
     Write-Host ""
     $email = Read-Host "Email [Enter to skip]"
-    
+
     if ($email) {
         Write-Host "Email: $email"
         Write-Host ""
         Send-Optin -Email $email -InstallServer $InstallServer
-        
+
         # Update config
         Add-Content -Path $ConfigFile -Value "email_optin: true"
-        
+
         Write-Host "${Check} Subscribed! Check your inbox for a welcome email."
     } else {
         Write-Host "Email: Skipped"
